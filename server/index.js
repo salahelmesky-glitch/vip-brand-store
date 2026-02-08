@@ -22,7 +22,12 @@ if (!fs.existsSync(uploadsDir)) {
 // Middleware
 const allowedOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',')
-    : ['http://localhost:5173', 'http://127.0.0.1:5173'];
+    : [
+        'http://localhost:5173',
+        'http://127.0.0.1:5173',
+        'https://vip-brand-store.vercel.app',
+        'https://vip-brand-store-salahelmesky-glitchs-projects.vercel.app'
+    ];
 app.use(cors({
     origin: allowedOrigins,
     credentials: true
