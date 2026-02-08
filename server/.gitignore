@@ -1,0 +1,13 @@
+# Ignore node_modules
+node_modules/
+
+# Env files (keep secrets safe!)
+.env
+.env.local
+.env.production
+
+# Uploads (will be stored in cloud for production)
+uploads/
+
+# Logs
+*.log
