@@ -1,0 +1,213 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700&family=Noto+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+@import "tailwindcss";
+
+/* ─── Design Tokens ─── */
+@theme {
+  --color-obsidian: #050505;
+  --color-obsidian-light: #0c0c12;
+  --color-surface: #111118;
+  --color-surface-light: #18182a;
+  --color-holo: #bf40bf;
+  --color-holo-dim: #8a2e8a;
+  --color-holo-bright: #d966d9;
+  --color-purple: #7b2fff;
+  --color-purple-dim: #5a1fbb;
+  --color-white-95: #f2f2f7;
+  --color-white-60: #99999f;
+  --color-glass: rgba(255, 255, 255, 0.04);
+  --color-glass-border: rgba(191, 64, 191, 0.10);
+  --color-whatsapp: #25D366;
+  --font-heading: 'Orbitron', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-arabic: 'Noto Sans Arabic', 'Inter', sans-serif;
+}
+
+/* ─── Base Reset ─── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-body);
+  background: #050010;
+  background-color: #050010;
+  color: var(--color-white-95);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ─── Global Scrollbar ─── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--color-obsidian); }
+::-webkit-scrollbar-thumb { background: var(--color-holo-dim); border-radius: 99px; }
+
+/* ─── Glass Utility (simplified - no blur on mobile) ─── */
+.glass {
+  background: var(--color-glass);
+  border: 1px solid var(--color-glass-border);
+}
+@media (min-width: 769px) {
+  .glass {
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+}
+
+/* ─── Neon Glow Utilities ─── */
+.glow-holo {
+  box-shadow: 0 0 15px rgba(191, 64, 191, 0.3);
+}
+.holo-text-glow {
+  text-shadow: 0 0 20px rgba(191, 64, 191, 0.5);
+}
+.glow-whatsapp {
+  box-shadow: 0 0 18px rgba(37, 211, 102, 0.4);
+}
+
+/* ═══ VIP COSMIC LOGO ═══ */
+.vip-cosmic {
+  background: linear-gradient(135deg, #ffffff 0%, #e0c0e0 20%, #bf40bf 50%, #7b2fff 80%, #ffffff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 4px 30px rgba(191, 64, 191, 0.4));
+}
+
+/* ─── Shimmer Animation ─── */
+.vip-shimmer {
+  background: linear-gradient(
+    105deg,
+    transparent 20%,
+    rgba(255, 255, 255, 0.1) 45%,
+    rgba(191, 64, 191, 0.12) 50%,
+    rgba(255, 255, 255, 0.1) 55%,
+    transparent 80%
+  );
+  background-size: 250% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: shimmer 5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% center; }
+  100% { background-position: -200% center; }
+}
+
+/* ─── Portal Text Shimmer ─── */
+@keyframes portalTextShimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ─── Portal Ring Pulse ─── */
+.portal-ring {
+  animation: portalPulse 2.5s ease-in-out infinite;
+}
+
+@keyframes portalPulse {
+  0%, 100% { box-shadow: 0 0 30px rgba(191,64,191,0.1); }
+  50% { box-shadow: 0 0 50px rgba(191,64,191,0.2); }
+}
+
+/* ═══ LIGHTWEIGHT CARD SYSTEM ═══ */
+
+.holo-card {
+  display: block;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: rgba(12, 12, 18, 0.9);
+  border: 1px solid rgba(191, 64, 191, 0.08);
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.holo-card:hover {
+  border-color: rgba(191, 64, 191, 0.3);
+  box-shadow: 0 0 20px rgba(191, 64, 191, 0.1), 0 8px 30px rgba(0, 0, 0, 0.4);
+  transform: translateY(-4px);
+}
+
+.holo-card:hover img {
+  transform: scale(1.04);
+}
+
+/* ─── Arabic Text Helper ─── */
+.ar {
+  font-family: var(--font-arabic);
+  direction: rtl;
+  unicode-bidi: isolate;
+}
+
+/* ─── Image Placeholder ─── */
+.img-placeholder {
+  background: linear-gradient(135deg, #0c0c12, #1a0b2e);
+}
+
+/* ─── Mobile: disable transforms for better scroll ─── */
+@media (max-width: 768px) {
+  .holo-card:hover {
+    transform: none;
+    box-shadow: none;
+  }
+}
+
+/* ═══ EAGLE LOGO 3D ROTATION ═══ */
+.logo-container {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  overflow: hidden;
+  animation: rotate3D 8s linear infinite;
+  border: 2px solid rgba(191, 64, 191, 0.4);
+  box-shadow: 0 0 15px rgba(191, 64, 191, 0.2);
+  flex-shrink: 0;
+}
+
+@media (min-width: 768px) {
+  .logo-container {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+@keyframes rotate3D {
+  0% { transform: rotateY(0deg); }
+  100% { transform: rotateY(360deg); }
+}
+
+/* ═══ MUSIC CONTROL BUTTON ═══ */
+.music-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(191, 64, 191, 0.1);
+  border: 1px solid rgba(191, 64, 191, 0.25);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.music-btn:hover {
+  background: rgba(191, 64, 191, 0.2);
+  border-color: rgba(191, 64, 191, 0.5);
+}
+
+.music-btn.playing {
+  border-color: rgba(57, 255, 20, 0.5);
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.8; }
+}

@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VIP T-Shirt Store | متجر تيشيرتات VIP</title>
+  <meta name="description" content="متجر VIP للتيشيرتات الفاخرة — أحدث التصاميم بأفضل الأسعار" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── Reset & Base ─── */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #13131d;
+      --card: #1a1a28;
+      --border: rgba(255,255,255,0.06);
+      --cyan: #00e5ff;
+      --cyan-dim: rgba(0,229,255,0.15);
+      --purple: #8b5cf6;
+      --text: #f0f0f5;
+      --muted: #8888a0;
+      --messenger: #0084FF;
+      --telegram: #2AABEE;
+      --radius: 14px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Cairo', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ─── Navbar ─── */
+    .navbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: rgba(10,10,15,0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .navbar .logo {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--cyan);
+      text-decoration: none;
+      letter-spacing: 0.15em;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 14px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: color 0.3s;
+      white-space: nowrap;
+    }
+
+    .nav-links a:hover { color: var(--cyan); }
+
+    /* ─── Hero ─── */
+    .hero {
+      text-align: center;
+      padding: 48px 16px 32px;
+    }
+
+    .hero h1 {
+      font-size: 1.8rem;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .hero h1 span { color: var(--cyan); }
+
+    .hero p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    /* ─── Products Grid ─── */
+    .section-title {
+      text-align: center;
+      padding: 24px 16px 16px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      padding: 0 12px 40px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    @media (min-width: 640px) {
+      .products { grid-template-columns: repeat(3, 1fr); gap: 16px; padding: 0 20px 48px; }
+    }
+
+    .product-card {
+      background: var(--card);
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: transform 0.3s, border-color 0.3s, box-shadow 0.3s;
+    }
+
+    .product-card:hover {
+      transform: translateY(-4px);
+      border-color: rgba(0,229,255,0.2);
+      box-shadow: 0 8px 30px rgba(0,229,255,0.06);
+    }
+
+    .product-card img {
+      width: 100%;
+      aspect-ratio: 4/5;
+      object-fit: cover;
+      display: block;
+    }
+
+    .product-info {
+      padding: 10px 12px 14px;
+    }
+
+    .product-info h3 {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text);
+      margin-bottom: 4px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .product-info .price {
+      font-size: 0.9rem;
+      font-weight: 800;
+      color: var(--cyan);
+    }
+
+    /* ─── Modal Overlay ─── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(5,5,10,0.85);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .modal-overlay.active { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      max-width: 360px;
+      width: 100%;
+      overflow: hidden;
+      animation: modalIn 0.3s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.92) translateY(16px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal img {
+      width: 100%;
+      aspect-ratio: 4/5;
+      object-fit: cover;
+      display: block;
+    }
+
+    .modal-body {
+      padding: 16px 18px 20px;
+    }
+
+    .modal-body h3 {
+      font-size: 1rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .modal-body .price {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: var(--cyan);
+      margin-bottom: 16px;
+    }
+
+    .contact-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      margin-bottom: 10px;
+    }
+
+    .contact-btn:last-child { margin-bottom: 0; }
+    .contact-btn:hover { transform: scale(1.02); }
+
+    .btn-messenger {
+      background: linear-gradient(135deg, #00B2FF, #006AFF);
+      box-shadow: 0 4px 20px rgba(0,106,255,0.25);
+    }
+
+    .btn-telegram {
+      background: linear-gradient(135deg, #2AABEE, #1E96D1);
+      box-shadow: 0 4px 20px rgba(42,171,238,0.25);
+    }
+
+    .contact-btn svg { width: 18px; height: 18px; fill: currentColor; }
+
+    .modal-close {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #fff;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+
+    .modal-close:hover { background: rgba(0,0,0,0.7); }
+
+    .modal .img-wrap { position: relative; }
+
+    /* ─── Footer ─── */
+    .footer {
+      text-align: center;
+      padding: 24px 16px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 0.75rem;
+    }
+
+    .footer a { color: var(--cyan); text-decoration: none; }
+
+    /* ─── Contact Section ─── */
+    .contact {
+      text-align: center;
+      padding: 32px 16px 40px;
+    }
+
+    .contact h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .contact p {
+      color: var(--muted);
+      font-size: 0.85rem;
+      max-width: 380px;
+      margin: 0 auto 16px;
+    }
+
+    .contact-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .contact-row a {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border-radius: 10px;
+      color: #fff;
+      text-decoration: none;
+      font-size: 0.82rem;
+      font-weight: 700;
+      transition: transform 0.2s;
+    }
+
+    .contact-row a:hover { transform: scale(1.04); }
+    .contact-row a svg { width: 16px; height: 16px; fill: currentColor; }
+  </style>
+</head>
+<body>
+
+  <!-- ─── Navbar ─── -->
+  <nav class="navbar">
+    <a href="#" class="logo">VIP</a>
+    <ul class="nav-links">
+      <li><a href="#hero">الرئيسية</a></li>
+      <li><a href="#products">المنتجات</a></li>
+      <li><a href="#contact">اتصل بنا</a></li>
+    </ul>
+  </nav>
+
+  <!-- ─── Hero ─── -->
+  <section class="hero" id="hero">
+    <h1>متجر تيشيرتات <span>VIP</span></h1>
+    <p>تصاميم حصرية بجودة عالية — كل القطع بسعر موحد <strong style="color:var(--cyan)">500 EGP</strong></p>
+  </section>
+
+  <!-- ─── Products ─── -->
+  <p class="section-title" id="products">— المنتجات —</p>
+  <div class="products" id="product-grid">
+    <!-- Cards injected by JS -->
+  </div>
+
+  <!-- ─── Contact Section ─── -->
+  <section class="contact" id="contact">
+    <h2>تواصل معنا</h2>
+    <p>لأي استفسارات أو طلبات خاصة، تواصل معنا مباشرة</p>
+    <div class="contact-row">
+      <a href="https://m.me/VIPBrandStore" target="_blank" class="btn-messenger" style="border-radius:10px;">
+        <svg viewBox="0 0 24 24"><path d="M12 2C6.36 2 2 6.13 2 11.7c0 2.91 1.2 5.42 3.15 7.25a.71.71 0 01.23.52l.05 1.68a.71.71 0 001 .63l1.88-.83a.71.71 0 01.48-.03c.9.25 1.87.38 2.89.38h.32C17.64 21.3 22 17.17 22 11.7S17.64 2 12 2zm5.83 7.73l-2.87 4.55a1.5 1.5 0 01-2.17.4l-2.28-1.71a.6.6 0 00-.72 0l-3.08 2.34a.47.47 0 01-.68-.63l2.87-4.55a1.5 1.5 0 012.17-.4l2.28 1.71a.6.6 0 00.72 0l3.08-2.34a.47.47 0 01.68.63z"/></svg>
+        Messenger
+      </a>
+      <a href="https://t.me/VIPBrandStore" target="_blank" class="btn-telegram" style="border-radius:10px;">
+        <svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0h-.056zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+        Telegram
+      </a>
+    </div>
+  </section>
+
+  <!-- ─── Footer ─── -->
+  <footer class="footer">
+    © 2026 <a href="#">VIP Brand</a> — جميع الحقوق محفوظة
+  </footer>
+
+  <!-- ─── Modal ─── -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal">
+      <div class="img-wrap">
+        <img id="modal-img" src="" alt="" />
+        <button class="modal-close" id="modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <h3 id="modal-name"></h3>
+        <div class="price" id="modal-price">500 EGP</div>
+        <a id="btn-messenger" class="contact-btn btn-messenger" href="#" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24"><path d="M12 2C6.36 2 2 6.13 2 11.7c0 2.91 1.2 5.42 3.15 7.25a.71.71 0 01.23.52l.05 1.68a.71.71 0 001 .63l1.88-.83a.71.71 0 01.48-.03c.9.25 1.87.38 2.89.38h.32C17.64 21.3 22 17.17 22 11.7S17.64 2 12 2zm5.83 7.73l-2.87 4.55a1.5 1.5 0 01-2.17.4l-2.28-1.71a.6.6 0 00-.72 0l-3.08 2.34a.47.47 0 01-.68-.63l2.87-4.55a1.5 1.5 0 012.17-.4l2.28 1.71a.6.6 0 00.72 0l3.08-2.34a.47.47 0 01.68.63z"/></svg>
+          تواصل عبر Messenger
+        </a>
+        <a id="btn-telegram" class="contact-btn btn-telegram" href="#" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 000 12a12 12 0 0012 12 12 12 0 0012-12A12 12 0 0012 0h-.056zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 01.171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.479.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+          تواصل عبر Telegram
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ─── Product Data ─── */
+    const products = [
+      { id: 1, name: 'تيشيرت أوبسيديان VIP',      img: 'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=400&h=500&fit=crop' },
+      { id: 2, name: 'تيشيرت نيون سيركت',         img: 'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=400&h=500&fit=crop' },
+      { id: 3, name: 'تيشيرت ميدنايت ستيلث',       img: 'https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=400&h=500&fit=crop' },
+      { id: 4, name: 'تيشيرت إكليبس كور',          img: 'https://images.unsplash.com/photo-1576566588028-4147f3842f27?w=400&h=500&fit=crop' },
+      { id: 5, name: 'تيشيرت فانتوم إيدج',          img: 'https://images.unsplash.com/photo-1554568218-0f1715e72254?w=400&h=500&fit=crop' },
+      { id: 6, name: 'تيشيرت فويد لوكس',           img: 'https://images.unsplash.com/photo-1562157873-818bc0726f68?w=400&h=500&fit=crop' },
+    ];
+
+    const MESSENGER_PAGE = 'VIPBrandStore';
+    const TELEGRAM_USER = 'VIPBrandStore';
+
+    /* ─── Render Product Cards ─── */
+    const grid = document.getElementById('product-grid');
+
+    products.forEach(product => {
+      const card = document.createElement('div');
+      card.className = 'product-card';
+      card.innerHTML = `
+        <img src="${product.img}" alt="${product.name}" loading="lazy" />
+        <div class="product-info">
+          <h3>${product.name}</h3>
+          <div class="price">500 EGP</div>
+        </div>
+      `;
+      card.addEventListener('click', () => openModal(product));
+      grid.appendChild(card);
+    });
+
+    /* ─── Modal Logic ─── */
+    const overlay   = document.getElementById('modal-overlay');
+    const modalImg  = document.getElementById('modal-img');
+    const modalName = document.getElementById('modal-name');
+    const btnMsg    = document.getElementById('btn-messenger');
+    const btnTg     = document.getElementById('btn-telegram');
+    const closeBtn  = document.getElementById('modal-close');
+
+    function openModal(product) {
+      modalImg.src = product.img;
+      modalImg.alt = product.name;
+      modalName.textContent = product.name;
+
+      const msg = encodeURIComponent(`أريد الاستفسار عن تيشيرت ${product.name} — 500 EGP`);
+
+      btnMsg.href = `https://m.me/${MESSENGER_PAGE}`;
+      btnTg.href  = `https://t.me/${TELEGRAM_USER}?text=${msg}`;
+
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    closeBtn.addEventListener('click', closeModal);
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeModal();
+    });
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeModal();
+    });
+  </script>
+</body>
+</html>
