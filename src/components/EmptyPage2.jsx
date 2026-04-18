@@ -95,14 +95,35 @@ function SpinWheel({ onSpin, isLoggedIn, userPoints }) {
   }, [angle, PRIZES]);
 
   const doSpin = async () => {
-    if (spinning || !canSpin) return; setSpinning(true); setResult(null);
-    const dur = 3000, rot = Math.PI * 8 + Math.random() * Math.PI * 4;
-    const st = Date.now(), sa = angle;
+    if (spinning || !canSpin) return;
+    setSpinning(true); setResult(null);
+
+    // 1) Call server FIRST — get the prize + deduct points immediately
+    const r = await onSpin();
+    if (!r?.success) { setSpinning(false); return; }
+
+    const prizeIdx = r.prizeIndex ?? 0;
+    const numSlices = PRIZES.length;
+    const sliceAngle = (2 * Math.PI) / numSlices;
+
+    // 2) Calculate target angle so the arrow (right side, angle=0) lands on the winning slice
+    //    The arrow points at angle 0 (right). Slice i covers from i*sliceAngle to (i+1)*sliceAngle.
+    //    We want: (targetAngle + prizeIdx * sliceAngle + sliceAngle/2) mod 2π ≈ 0  (pointing right)
+    //    So targetAngle = -(prizeIdx * sliceAngle + sliceAngle/2)
+    const targetSliceCenter = -(prizeIdx * sliceAngle + sliceAngle / 2);
+    // Add multiple full rotations for visual effect
+    const fullSpins = Math.PI * 2 * (6 + Math.floor(Math.random() * 3));
+    const targetAngle = fullSpins + targetSliceCenter;
+
+    // 3) Animate to that exact angle
+    const dur = 3500, st = Date.now(), sa = angle;
+    const totalRot = targetAngle - sa;
     const anim = () => {
       const p = Math.min((Date.now() - st) / dur, 1);
-      setAngle(sa + rot * (1 - Math.pow(1 - p, 3)));
+      const ease = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      setAngle(sa + totalRot * ease);
       if (p < 1) { animRef.current = requestAnimationFrame(anim); }
-      else { (async () => { const r = await onSpin(); if (r?.success) setResult(r.prize); setSpinning(false); })(); }
+      else { setResult(r.prize); setSpinning(false); }
     };
     animRef.current = requestAnimationFrame(anim);
   };

@@ -152,8 +152,8 @@ export default async function handler(req, res) {
       const { email } = req.body;
       const user = await User.findOne({ email: email.toLowerCase() });
       if (!user) return res.status(404).json({ success: false, error: 'User not found' });
-      if (user.points < 50) {
-        return res.status(400).json({ success: false, error: 'Not enough points (need 50) / محتاج ٥٠ نقطة' });
+      if (user.points < 400) {
+        return res.status(400).json({ success: false, error: 'Not enough points (need 400) / محتاج ٤٠٠ نقطة' });
       }
 
       // Determine prize
@@ -166,13 +166,16 @@ export default async function handler(req, res) {
       else if (rand < 90) prize = 'bonus_30';
       else prize = 'try_again';
 
-      user.points -= 50;
+      const prizeIds = ['discount_10', 'bonus_30', 'free_shipping', 'discount_20', 'try_again', 'free_tshirt'];
+      const prizeIndex = prizeIds.indexOf(prize);
+
+      user.points -= 400;
       if (prize === 'bonus_30') user.points += 30;
       user.spinHistory.push({ prize, date: new Date() });
       if (!user.rewardsUnlocked.includes('spin')) user.rewardsUnlocked.push('spin');
 
       await user.save();
-      return res.status(200).json({ success: true, data: sanitize(user), prize });
+      return res.status(200).json({ success: true, data: sanitize(user), prize, prizeIndex });
     }
 
     /* ══ GIFT REWARD ══ */
