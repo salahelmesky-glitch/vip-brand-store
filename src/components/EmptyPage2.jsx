@@ -21,40 +21,46 @@ const PRIZE_MAP = {
 };
 
 /* ═══════════════════════════════════════════════
-   SPIN WHEEL (Canvas)
+   SPIN WHEEL (Canvas) — requires 400 points
    ═══════════════════════════════════════════════ */
-function SpinWheel({ onSpin, locked }) {
+function SpinWheel({ onSpin, isLoggedIn, userPoints }) {
   const canvasRef = useRef(null);
   const [spinning, setSpinning] = useState(false);
   const [angle, setAngle] = useState(0);
   const [result, setResult] = useState(null);
   const animRef = useRef(null);
 
+  const needsLogin = !isLoggedIn;
+  const needsPoints = isLoggedIn && userPoints < 400;
+  const canSpin = isLoggedIn && userPoints >= 400;
+
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const size = canvas.width, center = size / 2, radius = center - 8;
+    const size = canvas.width, center = size / 2, radius = center - 10;
     const slice = (2 * Math.PI) / PRIZES.length;
     ctx.clearRect(0, 0, size, size);
     PRIZES.forEach((p, i) => {
       const s = angle + i * slice, e = s + slice;
       ctx.beginPath(); ctx.moveTo(center, center); ctx.arc(center, center, radius, s, e);
       ctx.closePath(); ctx.fillStyle = p.color; ctx.fill();
-      ctx.strokeStyle = '#050010'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = '#050010'; ctx.lineWidth = 2.5; ctx.stroke();
       ctx.save(); ctx.translate(center, center); ctx.rotate(s + slice / 2);
-      ctx.textAlign = 'right'; ctx.fillStyle = '#fff'; ctx.font = 'bold 10px sans-serif';
-      ctx.fillText(p.icon + ' ' + p.labelAr, radius - 12, 4); ctx.restore();
+      ctx.textAlign = 'right'; ctx.fillStyle = '#fff'; ctx.font = 'bold 12px sans-serif';
+      ctx.fillText(p.icon + ' ' + p.labelAr, radius - 14, 5); ctx.restore();
     });
-    ctx.beginPath(); ctx.arc(center, center, 20, 0, Math.PI * 2);
-    ctx.fillStyle = '#050010'; ctx.fill(); ctx.strokeStyle = '#bf40bf'; ctx.lineWidth = 2; ctx.stroke();
-    ctx.fillStyle = '#bf40bf'; ctx.font = 'bold 12px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    // Center circle
+    ctx.beginPath(); ctx.arc(center, center, 26, 0, Math.PI * 2);
+    ctx.fillStyle = '#050010'; ctx.fill(); ctx.strokeStyle = '#bf40bf'; ctx.lineWidth = 3; ctx.stroke();
+    ctx.fillStyle = '#bf40bf'; ctx.font = 'bold 14px sans-serif'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('VIP', center, center);
-    ctx.beginPath(); ctx.moveTo(size - 4, center - 8); ctx.lineTo(size - 4, center + 8); ctx.lineTo(size - 18, center);
+    // Arrow
+    ctx.beginPath(); ctx.moveTo(size - 4, center - 10); ctx.lineTo(size - 4, center + 10); ctx.lineTo(size - 22, center);
     ctx.closePath(); ctx.fillStyle = '#00ff66'; ctx.fill();
   }, [angle]);
 
   const doSpin = async () => {
-    if (spinning || locked) return; setSpinning(true); setResult(null);
+    if (spinning || !canSpin) return; setSpinning(true); setResult(null);
     const dur = 3000, rot = Math.PI * 8 + Math.random() * Math.PI * 4;
     const st = Date.now(), sa = angle;
     const anim = () => {
@@ -66,24 +72,74 @@ function SpinWheel({ onSpin, locked }) {
     animRef.current = requestAnimationFrame(anim);
   };
 
+  const btnText = needsLogin
+    ? '🔒 سجل الدخول لتشترك في المسابقة'
+    : needsPoints
+      ? `🔒 محتاج ${400 - userPoints} نقطة كمان`
+      : spinning ? '🎰 ...' : '🎰 لف العجلة / SPIN!';
+
   return (
     <div style={cardStyle}>
-      <p style={secLabel}>🎰 عجلة الحظ / SPIN WHEEL <span style={{ color: '#666', fontWeight: 400 }}>(50 نقطة)</span></p>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
-        <canvas ref={canvasRef} width={240} height={240} style={{ borderRadius: '50%', border: '3px solid rgba(191,64,191,0.3)', opacity: locked ? 0.35 : 1 }} />
-        <button onClick={doSpin} disabled={spinning || locked} style={{
-          padding: '10px 28px', borderRadius: 30, border: 'none',
-          background: locked ? '#333' : 'linear-gradient(135deg, #bf40bf, #7b2fff)',
-          color: '#fff', fontSize: 13, fontWeight: 700, cursor: locked ? 'not-allowed' : 'pointer',
+      <p style={secLabel}>🎰 عجلة الحظ / SPIN WHEEL <span style={{ color: '#666', fontWeight: 400 }}>(400 نقطة)</span></p>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+        <canvas ref={canvasRef} width={300} height={300} style={{
+          borderRadius: '50%', border: '4px solid rgba(191,64,191,0.35)',
+          opacity: canSpin ? 1 : 0.4, maxWidth: '85vw', height: 'auto',
+        }} />
+        <button onClick={doSpin} disabled={spinning || !canSpin} style={{
+          padding: '12px 32px', borderRadius: 30, border: 'none', width: '100%', maxWidth: 320,
+          background: canSpin ? 'linear-gradient(135deg, #bf40bf, #7b2fff)' : '#222',
+          color: '#fff', fontSize: 13, fontWeight: 700,
+          cursor: canSpin ? 'pointer' : 'not-allowed',
           opacity: spinning ? 0.6 : 1,
-        }}>{locked ? '🔒 سجل دخول من الإعدادات' : (user?.points || 0) < 50 ? '🔒 محتاج 50 نقطة' : spinning ? '🎰 ...' : '🎰 لف العجلة / SPIN!'}</button>
+        }}>{btnText}</button>
         {result && (
-          <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(0,255,102,0.08)', border: '1px solid rgba(0,255,102,0.25)', textAlign: 'center' }}>
-            <p style={{ fontSize: 18, margin: '0 0 2px' }}>{PRIZE_MAP[result]?.icon}</p>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#00ff66', margin: 0 }}>{PRIZE_MAP[result]?.label}</p>
+          <div style={{ padding: '14px 18px', borderRadius: 14, background: 'rgba(0,255,102,0.08)', border: '1px solid rgba(0,255,102,0.25)', textAlign: 'center', width: '100%' }}>
+            <p style={{ fontSize: 20, margin: '0 0 4px' }}>{PRIZE_MAP[result]?.icon}</p>
+            <p style={{ fontSize: 14, fontWeight: 700, color: '#00ff66', margin: 0 }}>{PRIZE_MAP[result]?.label}</p>
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════
+   REWARD CARD (reusable)
+   ═══════════════════════════════════════════════ */
+function RewardCard({ icon, title, desc, cost, onClaim, isLoggedIn, userPoints, successMsg }) {
+  const needsLogin = !isLoggedIn;
+  const hasEnough = userPoints >= cost;
+  const canClaim = isLoggedIn && hasEnough;
+
+  const btnText = needsLogin
+    ? '🔒 سجل الدخول أولاً'
+    : !hasEnough
+      ? `🔒 محتاج ${cost - userPoints} نقطة كمان`
+      : `✨ استبدل ${cost} نقطة`;
+
+  return (
+    <div style={{
+      padding: '16px', borderRadius: 14,
+      background: canClaim ? 'rgba(0,255,102,0.03)' : 'rgba(255,255,255,0.02)',
+      border: `1px solid ${canClaim ? 'rgba(0,255,102,0.15)' : 'rgba(255,255,255,0.06)'}`,
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 10 }}>
+        <span style={{ fontSize: 28 }}>{icon}</span>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: '#f2f2f7', margin: 0 }}>{title}</p>
+          <p style={{ fontSize: 11, color: '#888', margin: '3px 0 0' }}>{desc} · {cost} نقطة</p>
+        </div>
+      </div>
+      <button onClick={canClaim ? onClaim : undefined} disabled={!canClaim} style={{
+        width: '100%', padding: 11, borderRadius: 12, border: 'none',
+        background: canClaim ? 'linear-gradient(135deg, #bf40bf, #7b2fff)' : '#1a1a24',
+        color: canClaim ? '#fff' : '#666', fontSize: 12, fontWeight: 700,
+        cursor: canClaim ? 'pointer' : 'not-allowed',
+      }}>{btnText}</button>
+      {successMsg && (
+        <p style={{ fontSize: 13, color: '#00ff66', textAlign: 'center', fontWeight: 600, margin: '8px 0 0' }}>{successMsg}</p>
+      )}
     </div>
   );
 }
@@ -114,7 +170,7 @@ function VideoSection() {
           <a key={i} href={v.url} target="_blank" rel="noopener noreferrer" style={{
             display: 'block', borderRadius: 12, overflow: 'hidden',
             background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(191,64,191,0.12)',
-            textDecoration: 'none', transition: 'all 0.2s',
+            textDecoration: 'none',
           }}>
             <div style={{
               width: '100%', aspectRatio: '9/16', background: 'linear-gradient(135deg, #1a0b2e, #0c0c12)',
@@ -176,16 +232,15 @@ function Newsletter() {
 }
 
 /* ═══════════════════════════════════════════════
-   PREMIUM FOOTER (like image 5)
+   PREMIUM FOOTER
    ═══════════════════════════════════════════════ */
 function PremiumFooter() {
   return (
     <footer style={{
-      background: '#0a0a14', padding: '32px 20px 18px', marginTop: 4,
+      background: '#0a0a14', padding: '32px 20px 18px', marginTop: 10,
       borderTop: '1px solid rgba(191,64,191,0.08)',
     }}>
       <div style={{ maxWidth: 480, margin: '0 auto' }}>
-        {/* Brand */}
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 20 }}>
           <div style={{
             width: 36, height: 36, borderRadius: 10, flexShrink: 0,
@@ -196,61 +251,45 @@ function PremiumFooter() {
           <div>
             <h4 style={{ fontSize: 16, fontWeight: 900, margin: '0 0 4px', color: '#f2f2f7', letterSpacing: '0.1em' }}>VIP</h4>
             <p style={{ fontSize: 10, color: '#888', margin: 0, lineHeight: 1.5, maxWidth: 280 }}>
-              نحن VIP Brand، براند مصري طالع من قلب محافظة كفر الشيخ. بنقدم أحدث صيحات الـ Streetwear بجودة عالمية وتصاميم مستقبلية.
-            </p>
-            <p style={{ fontSize: 9, color: '#666', margin: '4px 0 0', lineHeight: 1.5 }}>
-              We are VIP Brand — Egyptian streetwear from the heart of Kafr El-Sheikh, delivering world-class quality and futuristic designs.
+              نحن VIP Brand، براند مصري طالع من قلب محافظة كفر الشيخ. بنقدم أحدث صيحات الـ Streetwear بجودة عالمية.
             </p>
           </div>
         </div>
-
-        {/* Social */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
           <a href="https://tiktok.com/@vipbrand" target="_blank" rel="noopener noreferrer" style={socialBtn}>♪ TikTok</a>
           <a href="https://instagram.com/vipbrand" target="_blank" rel="noopener noreferrer" style={socialBtn}>📷 Instagram</a>
           <a href="https://wa.me/201006527185" target="_blank" rel="noopener noreferrer" style={socialBtn}>💬 WhatsApp</a>
         </div>
-
-        {/* Links Grid */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 }}>
           <div>
             <h5 style={footerHead}>تسوق / SHOP</h5>
             <a href="/#boys-section" style={footerLink}>Boys / الولاد</a>
             <a href="/#girls-section" style={footerLink}>Girls / البنات</a>
-            <a href="/#store" style={footerLink}>جميع المنتجات / All Products</a>
           </div>
           <div>
             <h5 style={footerHead}>الدعم / SUPPORT</h5>
             <p style={footerLink}>Size Guide / دليل المقاسات</p>
-            <p style={footerLink}>Shipping / الشحن</p>
-            <p style={footerLink}>FAQ / أسئلة شائعة</p>
             <a href="https://wa.me/201006527185" target="_blank" rel="noopener noreferrer" style={{ ...footerLink, color: '#25D366' }}>📞 تواصل / Contact</a>
           </div>
         </div>
-
-        {/* Divider */}
         <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '0 0 12px' }} />
-
-        {/* Copyright */}
-        <p style={{ textAlign: 'center', fontSize: 9, color: 'rgba(255,255,255,0.2)', margin: '0 0 4px' }}>
-          © 2026 VIP Brand. All rights reserved. / جميع الحقوق محفوظة
+        <p style={{ textAlign: 'center', fontSize: 9, color: 'rgba(255,255,255,0.2)', margin: 0 }}>
+          © 2026 VIP Brand. All rights reserved.
         </p>
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 16 }}>
-          <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.15)' }}>Privacy / الخصوصية</span>
-          <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.15)' }}>Terms / الشروط</span>
-        </div>
       </div>
     </footer>
   );
 }
 
 /* ═══════════════════════════════════════════════
-   MAIN PAGE 2 — COMPETITIONS (NO LOGIN)
+   MAIN PAGE 2 — COMPETITIONS
    ═══════════════════════════════════════════════ */
 export default function EmptyPage2() {
   const { user, isLoggedIn, spinWheel, claimGift, claimMystery, leaderboard, fetchLeaderboard } = useUser();
   const [giftMsg, setGiftMsg] = useState('');
   const [mysteryMsg, setMysteryMsg] = useState('');
+
+  const pts = user?.points || 0;
 
   useEffect(() => { fetchLeaderboard(); }, [fetchLeaderboard]);
 
@@ -286,75 +325,64 @@ export default function EmptyPage2() {
         </Link>
       </header>
 
-      <div style={{ paddingTop: 58, paddingBottom: 0, maxWidth: 480, margin: '0 auto', padding: '58px 14px 0', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      <div style={{ paddingTop: 58, maxWidth: 480, margin: '0 auto', padding: '58px 14px 0', display: 'flex', flexDirection: 'column', gap: 22 }}>
 
-        {/* Welcome banner */}
+        {/* ════ WELCOME BANNER ════ */}
         {isLoggedIn && user ? (
           <div style={{ ...cardStyle, textAlign: 'center', borderColor: 'rgba(0,255,102,0.2)', background: 'rgba(0,255,102,0.04)' }}>
-            <p style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>أهلاً {user.name}! 👋</p>
-            <p style={{ fontSize: 11, color: '#888', margin: '0 0 8px' }}>حسابك مفعل — جرب حظك في المسابقة! 🎰</p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: 20 }}>
-              <span style={{ fontSize: 12, color: '#bf40bf', fontWeight: 700 }}>🏆 {user.points} نقطة</span>
-              <span style={{ fontSize: 12, color: '#888' }}>👕 {user.tshirtsPurchased} تيشيرت</span>
+            <p style={{ fontSize: 16, fontWeight: 700, margin: '0 0 4px' }}>أهلاً {user.name}! 👋</p>
+            <p style={{ fontSize: 12, color: '#888', margin: '0 0 10px' }}>حسابك مفعل — جرب حظك في المسابقة! 🎰</p>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 24 }}>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 22, fontWeight: 900, color: '#bf40bf', margin: 0 }}>{pts}</p>
+                <p style={{ fontSize: 10, color: '#888', margin: '2px 0 0' }}>نقطة 🏆</p>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ fontSize: 22, fontWeight: 900, color: '#00ff66', margin: 0 }}>{user.tshirtsPurchased}</p>
+                <p style={{ fontSize: 10, color: '#888', margin: '2px 0 0' }}>تيشيرت 👕</p>
+              </div>
             </div>
           </div>
         ) : (
-          <div style={{ ...cardStyle, textAlign: 'center', borderColor: 'rgba(191,64,191,0.2)' }}>
-            <p style={{ fontSize: 14, fontWeight: 700, color: '#bf40bf', margin: '0 0 6px' }}>🎁 مسابقات VIP / Competitions</p>
-            <p style={{ fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.6 }}>
-              سجل حسابك من الإعدادات عشان تقدر تشارك وتكسب نقاط!
+          <div style={{ ...cardStyle, textAlign: 'center', borderColor: 'rgba(191,64,191,0.25)', background: 'rgba(191,64,191,0.04)' }}>
+            <p style={{ fontSize: 28, margin: '0 0 8px' }}>🏆</p>
+            <p style={{ fontSize: 16, fontWeight: 800, color: '#f2f2f7', margin: '0 0 6px' }}>مسابقات VIP</p>
+            <p style={{ fontSize: 13, color: '#888', margin: '0 0 14px', lineHeight: 1.6 }}>
+              سجل الدخول لتشترك في المسابقة وتكسب نقاط وهدايا حصرية!
             </p>
             <Link to="/settings" style={{
-              display: 'inline-block', padding: '8px 20px', borderRadius: 10,
+              display: 'inline-block', padding: '11px 28px', borderRadius: 12,
               background: 'linear-gradient(135deg, #bf40bf, #7b2fff)',
-              color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none',
-            }}>🔐 سجل دخول الآن</Link>
+              color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none',
+              boxShadow: '0 4px 16px rgba(191,64,191,0.25)',
+            }}>🔐 سجل الدخول لتشترك</Link>
           </div>
         )}
 
-        {/* ════ SPIN WHEEL ════ */}
-        <SpinWheel onSpin={spinWheel} locked={!isLoggedIn || (user?.points || 0) < 50} />
-
-        {/* ════ REWARDS ════ */}
+        {/* ════ REWARDS — Gift (100 pts) ════ */}
         <div style={cardStyle}>
           <p style={secLabel}>🎁 المكافآت المتاحة</p>
-          {/* Gift */}
-          <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(191,64,191,0.06)', border: '1px solid rgba(191,64,191,0.15)', marginBottom: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 24 }}>🎁</span>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#f2f2f7', margin: 0 }}>هدية حصرية / Gift Reward</p>
-                <p style={{ fontSize: 10, color: '#888', margin: '2px 0 0' }}>احصل على هدية عبر واتساب · 100 نقاط</p>
-              </div>
-            </div>
-            <button onClick={handleGift} disabled={!isLoggedIn || (user?.points || 0) < 100} style={{
-              width: '100%', padding: 10, borderRadius: 10, border: 'none', marginTop: 8,
-              background: (!isLoggedIn || (user?.points || 0) < 100) ? '#222' : 'linear-gradient(135deg, #bf40bf, #7b2fff)',
-              color: '#fff', fontSize: 12, fontWeight: 700, cursor: (!isLoggedIn || (user?.points || 0) < 100) ? 'not-allowed' : 'pointer',
-            }}>{(!isLoggedIn || (user?.points || 0) < 100) ? '🔒 محتاج نقاط أكتر' : 'استبدل 100 نقطة'}</button>
-          </div>
-          {giftMsg && <p style={{ fontSize: 12, color: '#00ff66', textAlign: 'center', fontWeight: 600, margin: '4px 0' }}>{giftMsg}</p>}
-          {/* Mystery Box */}
-          <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.06)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 24 }}>📦</span>
-              <div style={{ flex: 1 }}>
-                <p style={{ fontSize: 13, fontWeight: 700, color: '#f2f2f7', margin: 0 }}>صندوق الغموض / Mystery Box</p>
-                <p style={{ fontSize: 10, color: '#888', margin: '2px 0 0' }}>افتح صندوق غامض · 200 نقاط</p>
-              </div>
-            </div>
-            <button onClick={handleMystery} disabled={!isLoggedIn || (user?.points || 0) < 200} style={{
-              width: '100%', padding: 10, borderRadius: 10, border: 'none', marginTop: 8,
-              background: (!isLoggedIn || (user?.points || 0) < 200) ? '#222' : 'linear-gradient(135deg, #bf40bf, #7b2fff)',
-              color: '#fff', fontSize: 12, fontWeight: 700, cursor: (!isLoggedIn || (user?.points || 0) < 200) ? 'not-allowed' : 'pointer',
-            }}>{(!isLoggedIn || (user?.points || 0) < 200) ? '🔒 محتاج نقاط أكتر' : 'استبدل 200 نقطة'}</button>
-          </div>
-          {mysteryMsg && (
-            <div style={{ padding: 14, borderRadius: 12, textAlign: 'center', marginTop: 8, background: 'rgba(191,64,191,0.08)', border: '1px solid rgba(191,64,191,0.2)' }}>
-              <p style={{ fontSize: 14, fontWeight: 700, color: '#bf40bf', margin: 0 }}>{mysteryMsg}</p>
-            </div>
-          )}
+
+          <RewardCard
+            icon="🎁" title="هدية حصرية / Gift Reward"
+            desc="احصل على هدية عبر واتساب" cost={100}
+            onClaim={handleGift} isLoggedIn={isLoggedIn} userPoints={pts}
+            successMsg={giftMsg}
+          />
+
+          <div style={{ height: 12 }} />
+
+          {/* Mystery Box (200 pts) */}
+          <RewardCard
+            icon="📦" title="صندوق الغموض / Mystery Box"
+            desc="افتح صندوق غامض" cost={200}
+            onClaim={handleMystery} isLoggedIn={isLoggedIn} userPoints={pts}
+            successMsg={mysteryMsg}
+          />
         </div>
+
+        {/* ════ SPIN WHEEL (400 pts) ════ */}
+        <SpinWheel onSpin={spinWheel} isLoggedIn={isLoggedIn} userPoints={pts} />
 
         {/* ════ LEADERBOARD ════ */}
         {leaderboard.length > 0 && (
@@ -362,16 +390,16 @@ export default function EmptyPage2() {
             <p style={secLabel}>🏆 المتصدرين / LEADERBOARD</p>
             {leaderboard.map((u, i) => (
               <div key={i} style={{
-                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 10px', borderRadius: 10,
+                display: 'flex', alignItems: 'center', gap: 8, padding: '10px 12px', borderRadius: 10,
                 background: i < 3 ? 'rgba(191,64,191,0.04)' : 'transparent',
                 border: i < 3 ? '1px solid rgba(191,64,191,0.1)' : '1px solid rgba(255,255,255,0.03)',
-                marginBottom: 4,
+                marginBottom: 6,
               }}>
-                <span style={{ fontSize: i < 3 ? 18 : 12, width: 26, textAlign: 'center' }}>
+                <span style={{ fontSize: i < 3 ? 20 : 12, width: 28, textAlign: 'center' }}>
                   {i < 3 ? ['🥇','🥈','🥉'][i] : `#${i+1}`}
                 </span>
-                <p style={{ flex: 1, fontSize: 12, fontWeight: 600, color: '#f2f2f7', margin: 0 }}>{u.name}</p>
-                <span style={{ fontSize: 12, fontWeight: 800, color: i === 0 ? '#ffd43b' : '#bf40bf' }}>{u.points} pts</span>
+                <p style={{ flex: 1, fontSize: 13, fontWeight: 600, color: '#f2f2f7', margin: 0 }}>{u.name}</p>
+                <span style={{ fontSize: 13, fontWeight: 800, color: i === 0 ? '#ffd43b' : '#bf40bf' }}>{u.points} pts</span>
               </div>
             ))}
           </div>
@@ -379,13 +407,14 @@ export default function EmptyPage2() {
 
         {/* Shop link */}
         <div style={{ textAlign: 'center' }}>
-          <Link to="/#store" style={{
+          <Link to="/" style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '12px 24px', borderRadius: 30, border: 'none',
+            padding: '13px 28px', borderRadius: 30, border: 'none',
             background: 'linear-gradient(135deg, #25D366, #128C7E)',
-            color: '#fff', fontSize: 13, fontWeight: 700, textDecoration: 'none',
+            color: '#fff', fontSize: 14, fontWeight: 700, textDecoration: 'none',
+            boxShadow: '0 4px 20px rgba(37,211,102,0.25)',
           }}>🛒 اشتري تيشيرت واكسب نقاط</Link>
-          <p style={{ fontSize: 9, color: '#555', margin: '6px 0 0' }}>كل تيشيرت = ١٠ نقاط · النقاط بتتحسب بعد تأكيد الطلب</p>
+          <p style={{ fontSize: 10, color: '#555', margin: '8px 0 0' }}>كل تيشيرت = ١٠ نقاط · النقاط بتتحسب بعد تأكيد الطلب</p>
         </div>
 
         {/* Divider */}
@@ -411,13 +440,13 @@ const inp = {
   outline: 'none', fontFamily: 'inherit', width: '100%', boxSizing: 'border-box',
 };
 const cardStyle = {
-  padding: '16px', borderRadius: 16,
+  padding: '18px', borderRadius: 16,
   background: 'rgba(255,255,255,0.02)',
   border: '1px solid rgba(191,64,191,0.1)',
 };
 const secLabel = {
-  fontSize: 10, letterSpacing: '0.2em', textTransform: 'uppercase',
-  color: '#bf40bf', fontWeight: 600, margin: '0 0 10px',
+  fontSize: 11, letterSpacing: '0.2em', textTransform: 'uppercase',
+  color: '#bf40bf', fontWeight: 600, margin: '0 0 14px',
 };
 const socialBtn = {
   fontSize: 10, fontWeight: 600, color: '#ccc', textDecoration: 'none',
