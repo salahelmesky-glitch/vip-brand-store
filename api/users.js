@@ -255,6 +255,15 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data: sanitize(user) });
     }
 
+    /* ══ ADMIN — DELETE USER ══ */
+    if (req.method === 'DELETE' && action === 'admin-delete') {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ success: false, error: 'Email required' });
+      const result = await User.findOneAndDelete({ email: email.toLowerCase() });
+      if (!result) return res.status(404).json({ success: false, error: 'User not found' });
+      return res.status(200).json({ success: true });
+    }
+
     return res.status(405).json({ success: false, error: 'Method/action not supported' });
   } catch (error) {
     console.error('[API /users Error]', error);
