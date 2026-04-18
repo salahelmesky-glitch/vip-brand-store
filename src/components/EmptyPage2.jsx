@@ -76,7 +76,7 @@ function SpinWheel({ onSpin, locked }) {
           background: locked ? '#333' : 'linear-gradient(135deg, #bf40bf, #7b2fff)',
           color: '#fff', fontSize: 13, fontWeight: 700, cursor: locked ? 'not-allowed' : 'pointer',
           opacity: spinning ? 0.6 : 1,
-        }}>{locked ? '🔒 سجل دخول من الإعدادات' : spinning ? '🎰 ...' : '🎰 لف العجلة / SPIN!'}</button>
+        }}>{locked ? '🔒 سجل دخول من الإعدادات' : (user?.points || 0) < 50 ? '🔒 محتاج 50 نقطة' : spinning ? '🎰 ...' : '🎰 لف العجلة / SPIN!'}</button>
         {result && (
           <div style={{ padding: '12px 16px', borderRadius: 12, background: 'rgba(0,255,102,0.08)', border: '1px solid rgba(0,255,102,0.25)', textAlign: 'center' }}>
             <p style={{ fontSize: 18, margin: '0 0 2px' }}>{PRIZE_MAP[result]?.icon}</p>
@@ -286,23 +286,29 @@ export default function EmptyPage2() {
         </Link>
       </header>
 
-      <div style={{ paddingTop: 58, paddingBottom: 0, maxWidth: 480, margin: '0 auto', padding: '58px 14px 0', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ paddingTop: 58, paddingBottom: 0, maxWidth: 480, margin: '0 auto', padding: '58px 14px 0', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
         {/* Welcome banner */}
         {isLoggedIn && user ? (
-          <div style={{ ...cardStyle, textAlign: 'center', borderColor: 'rgba(0,255,102,0.15)' }}>
-            <p style={{ fontSize: 14, fontWeight: 700, margin: '0 0 4px' }}>أهلاً {user.name}! 👋</p>
+          <div style={{ ...cardStyle, textAlign: 'center', borderColor: 'rgba(0,255,102,0.2)', background: 'rgba(0,255,102,0.04)' }}>
+            <p style={{ fontSize: 15, fontWeight: 700, margin: '0 0 4px' }}>أهلاً {user.name}! 👋</p>
+            <p style={{ fontSize: 11, color: '#888', margin: '0 0 8px' }}>حسابك مفعل — جرب حظك في المسابقة! 🎰</p>
             <div style={{ display: 'flex', justifyContent: 'center', gap: 20 }}>
-              <span style={{ fontSize: 11, color: '#bf40bf', fontWeight: 700 }}>🏆 {user.points} نقطة</span>
-              <span style={{ fontSize: 11, color: '#888' }}>👕 {user.tshirtsPurchased} تيشيرت</span>
+              <span style={{ fontSize: 12, color: '#bf40bf', fontWeight: 700 }}>🏆 {user.points} نقطة</span>
+              <span style={{ fontSize: 12, color: '#888' }}>👕 {user.tshirtsPurchased} تيشيرت</span>
             </div>
           </div>
         ) : (
           <div style={{ ...cardStyle, textAlign: 'center', borderColor: 'rgba(191,64,191,0.2)' }}>
-            <p style={{ fontSize: 13, fontWeight: 700, color: '#bf40bf', margin: '0 0 4px' }}>🎁 مسابقات VIP / Competitions</p>
-            <p style={{ fontSize: 11, color: '#888', margin: 0, lineHeight: 1.5 }}>
-              سجل حسابك من الإعدادات لتشارك وتكسب نقاط!
+            <p style={{ fontSize: 14, fontWeight: 700, color: '#bf40bf', margin: '0 0 6px' }}>🎁 مسابقات VIP / Competitions</p>
+            <p style={{ fontSize: 12, color: '#888', margin: '0 0 10px', lineHeight: 1.6 }}>
+              سجل حسابك من الإعدادات عشان تقدر تشارك وتكسب نقاط!
             </p>
+            <Link to="/settings" style={{
+              display: 'inline-block', padding: '8px 20px', borderRadius: 10,
+              background: 'linear-gradient(135deg, #bf40bf, #7b2fff)',
+              color: '#fff', fontSize: 12, fontWeight: 700, textDecoration: 'none',
+            }}>🔐 سجل دخول الآن</Link>
           </div>
         )}
 
