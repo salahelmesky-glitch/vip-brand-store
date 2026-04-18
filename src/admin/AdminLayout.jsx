@@ -5,6 +5,9 @@ import AdminSidebar from './AdminSidebar';
 import DashboardHome from './DashboardHome';
 import ProductsPage from './ProductsPage';
 import OrdersPage from './OrdersPage';
+import UsersPage from './UsersPage';
+import VideosPage from './VideosPage';
+import SiteSettingsPage from './SiteSettingsPage';
 
 export default function AdminLayout() {
   const { isAuthenticated } = useAdmin();
@@ -17,6 +20,9 @@ export default function AdminLayout() {
     switch (currentPage) {
       case 'products': return <ProductsPage />;
       case 'orders': return <OrdersPage />;
+      case 'users': return <UsersPage />;
+      case 'videos': return <VideosPage />;
+      case 'site-settings': return <SiteSettingsPage />;
       default: return <DashboardHome />;
     }
   };
@@ -25,6 +31,9 @@ export default function AdminLayout() {
     dashboard: '📊 لوحة التحكم',
     products: '📦 المنتجات',
     orders: '🛒 الطلبات',
+    users: '👥 الأعضاء',
+    videos: '🎬 الفيديوهات',
+    'site-settings': '⚙️ إعدادات الموقع',
   };
 
   return (

@@ -4,6 +4,9 @@ const NAV_ITEMS = [
   { key: 'dashboard', icon: '📊', label: 'Dashboard' },
   { key: 'products', icon: '📦', label: 'Products' },
   { key: 'orders', icon: '🛒', label: 'Orders' },
+  { key: 'users', icon: '👥', label: 'Users' },
+  { key: 'videos', icon: '🎬', label: 'Videos' },
+  { key: 'site-settings', icon: '⚙️', label: 'Settings' },
 ];
 
 export default function AdminSidebar({ currentPage, onNavigate, isMobileOpen, onCloseMobile }) {

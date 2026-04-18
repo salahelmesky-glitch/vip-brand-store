@@ -53,9 +53,30 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* CTA + Music + Admin */}
+        {/* CTA + Music + AI + Admin */}
         <div className="hidden lg:flex items-center gap-3">
           <MusicControl />
+          <Link
+            to="/ai"
+            title="AI Stylist — تكلم مع المصمم الذكي"
+            className="ai-nav-btn px-4 py-2 rounded-full text-[11px] font-bold tracking-wider border transition-all duration-300 flex items-center gap-2 hover:scale-105"
+            style={{
+              borderColor: 'rgba(0,255,102,0.5)',
+              color: '#00ff66',
+              background: 'rgba(0,255,102,0.08)',
+              boxShadow: '0 0 12px rgba(0,255,102,0.15), inset 0 0 8px rgba(0,255,102,0.05)',
+            }}
+          >
+            <span style={{ fontSize: 16 }}>🤖</span>
+            <span>AI Stylist</span>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ff66', display: 'inline-block', animation: 'aiPulse 1.5s ease-in-out infinite' }} />
+          </Link>
+          <Link
+            to="/settings"
+            title="Account / حسابك"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-white-60/40 hover:text-holo hover:bg-holo/10 transition-all duration-300"
+            style={{ fontSize: 14 }}
+          >🔐</Link>
           <Link
             to="/admin"
             title="Admin"
@@ -71,8 +92,27 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Toggle */}
-        <div className="lg:hidden flex items-center gap-3">
+        <div className="lg:hidden flex items-center gap-2">
           <MusicControl />
+          <Link
+            to="/ai"
+            title="AI Stylist — تكلم مع المصمم الذكي"
+            className="ai-nav-btn flex items-center gap-1.5 rounded-full transition-all duration-300"
+            style={{
+              fontSize: 12,
+              color: '#00ff66',
+              padding: '5px 12px',
+              background: 'rgba(0,255,102,0.1)',
+              border: '1px solid rgba(0,255,102,0.35)',
+              boxShadow: '0 0 10px rgba(0,255,102,0.12)',
+              fontWeight: 700,
+              letterSpacing: '0.05em',
+            }}
+          >
+            <span style={{ fontSize: 14 }}>🤖</span>
+            <span>AI</span>
+            <span style={{ width: 5, height: 5, borderRadius: '50%', background: '#00ff66', display: 'inline-block', animation: 'aiPulse 1.5s ease-in-out infinite' }} />
+          </Link>
           <Link
             to="/admin"
             title="Admin"
@@ -115,6 +155,14 @@ export default function Navbar() {
               {link.label}
             </a>
           ))}
+          <Link
+            to="/settings"
+            onClick={() => setMenuOpen(false)}
+            className="text-sm font-semibold tracking-wider transition-colors duration-300"
+            style={{ color: '#bf40bf', opacity: 1 }}
+          >
+            🔐 تسجيل دخول / Login
+          </Link>
           <a
             href="#store"
             onClick={() => setMenuOpen(false)}
@@ -124,6 +172,18 @@ export default function Navbar() {
           </a>
         </motion.div>
       )}
+
+      {/* AI Pulse animation */}
+      <style>{`
+        @keyframes aiPulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.7); }
+        }
+        .ai-nav-btn:hover {
+          box-shadow: 0 0 20px rgba(0,255,102,0.3), inset 0 0 12px rgba(0,255,102,0.08) !important;
+          border-color: rgba(0,255,102,0.7) !important;
+        }
+      `}</style>
     </motion.nav>
   );
 }

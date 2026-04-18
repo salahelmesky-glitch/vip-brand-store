@@ -12,7 +12,7 @@ const SIZES = ['M', 'L', 'XL', '2XL'];
 const WA_ICON = 'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z';
 
 /* ═══════════════════════════════════════════════════
-   PRODUCT DETAIL MODAL — lightweight
+   PRODUCT DETAIL MODAL — clean, mobile-first
    ═══════════════════════════════════════════════════ */
 function ProductDetailModal({ product, onClose }) {
   const [selectedSize, setSelectedSize] = useState('L');
@@ -20,22 +20,28 @@ function ProductDetailModal({ product, onClose }) {
   if (!product) return null;
 
   const waText = encodeURIComponent(
-    `أهلاً VIP، حابب أطلب ${product.name} مقاس ${selectedSize}\n` +
-    `📸 الصورة: ${window.location.origin}/images/${product.id}.jpg`
+    `أهلاً VIP 👋\n` +
+    `حابب أطلب الموديل ده:\n\n` +
+    `📦 المنتج: ${product.name}\n` +
+    `📏 المقاس: ${selectedSize}\n` +
+    `💰 السعر: ${product.price || 500} EGP\n\n` +
+    `📸 صورة المنتج: ${window.location.origin}${product.img}`
   );
   const waLink = `https://wa.me/${WHATSAPP}?text=${waText}`;
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center"
       onClick={onClose}
-      style={{ background: 'rgba(5,5,5,0.92)' }}
+      style={{ background: 'rgba(5,5,5,0.94)', padding: '12px' }}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl overflow-hidden"
+        className="relative w-full max-h-[92vh] overflow-y-auto"
         style={{
+          maxWidth: '400px',
           background: '#0c0c12',
+          borderRadius: '20px',
           border: '1px solid rgba(191,64,191,0.2)',
           boxShadow: '0 0 60px rgba(191,64,191,0.1)',
           animation: 'modalIn 0.25s ease-out',
@@ -45,7 +51,7 @@ function ProductDetailModal({ product, onClose }) {
         <button
           onClick={onClose}
           className="absolute top-3 right-3 z-30 w-9 h-9 rounded-full flex items-center justify-center text-white text-lg"
-          style={{ background: 'rgba(0,0,0,0.5)' }}
+          style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)' }}
         >
           ✕
         </button>
@@ -61,74 +67,61 @@ function ProductDetailModal({ product, onClose }) {
           />
         </div>
 
-        {/* Product info */}
-        <div className="p-5 sm:p-6">
-          <h2
-            className="text-center"
-            style={{
-              fontFamily: 'Orbitron, sans-serif',
-              fontSize: '20px',
-              fontWeight: '700',
-              letterSpacing: '1.5px',
-              color: '#f2f2f7',
-            }}
-          >
+        {/* Product info — clean aligned layout */}
+        <div style={{ padding: '20px 20px 24px' }}>
+          {/* Name */}
+          <h2 style={{
+            textAlign: 'center', fontSize: '18px', fontWeight: '800',
+            letterSpacing: '0.5px', color: '#f2f2f7', margin: '0 0 6px',
+            fontFamily: "'Inter', sans-serif",
+          }}>
             {product.name}
           </h2>
 
-          <p
-            className="text-center"
-            style={{
-              fontFamily: 'Montserrat, Inter, sans-serif',
-              fontSize: '22px',
-              fontWeight: '700',
-              color: '#bc13fe',
-              marginTop: '10px',
-            }}
-          >
+          {/* Price */}
+          <p style={{
+            textAlign: 'center', fontSize: '20px', fontWeight: '800',
+            color: '#bf40bf', margin: '0 0 18px',
+            fontFamily: "'Inter', sans-serif",
+          }}>
             {product.price || 500} EGP
           </p>
 
+          {/* Divider */}
+          <div style={{ height: 1, background: 'rgba(191,64,191,0.12)', margin: '0 0 16px' }} />
+
           {/* Size selector */}
-          <div style={{ marginTop: '15px' }}>
-            <p
-              className="text-center"
-              style={{
-                fontSize: '10px',
-                letterSpacing: '0.3em',
-                textTransform: 'uppercase',
-                color: '#99999f',
-                fontWeight: '500',
-                marginBottom: '12px',
-              }}
-            >
-              SELECT SIZE
+          <div style={{ marginBottom: '16px' }}>
+            <p style={{
+              textAlign: 'center', fontSize: '10px', letterSpacing: '0.25em',
+              textTransform: 'uppercase', color: '#888', fontWeight: '600',
+              margin: '0 0 10px',
+            }}>
+              📏 المقاس / SIZE
             </p>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '13px' }}>
-              {SIZES.map((size) => (
-                <button
-                  key={size}
-                  onClick={() => setSelectedSize(size)}
-                  style={{
-                    width: '52px',
-                    height: '52px',
-                    borderRadius: '50%',
-                    border: selectedSize === size ? '2px solid #d966d9' : '2px solid rgba(217,102,217,0.3)',
-                    background: selectedSize === size ? 'rgba(217,102,217,0.15)' : 'transparent',
-                    color: selectedSize === size ? '#ffffff' : 'rgba(255,255,255,0.6)',
-                    fontFamily: 'Orbitron, sans-serif',
-                    fontSize: '13px',
-                    fontWeight: '700',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {size}
-                </button>
-              ))}
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
+              {SIZES.map((size) => {
+                const sel = selectedSize === size;
+                return (
+                  <button
+                    key={size}
+                    onClick={() => setSelectedSize(size)}
+                    style={{
+                      width: '48px', height: '48px', borderRadius: '12px',
+                      border: sel ? '2px solid #bf40bf' : '1.5px solid rgba(255,255,255,0.12)',
+                      background: sel ? 'rgba(191,64,191,0.15)' : 'rgba(255,255,255,0.03)',
+                      color: sel ? '#fff' : 'rgba(255,255,255,0.5)',
+                      fontSize: '13px', fontWeight: '700', cursor: 'pointer',
+                      transition: 'all 0.2s', display: 'flex',
+                      alignItems: 'center', justifyContent: 'center',
+                      boxShadow: sel ? '0 0 12px rgba(191,64,191,0.2)' : 'none',
+                      fontFamily: "'Inter', sans-serif",
+                    }}
+                  >
+                    {size}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -137,40 +130,32 @@ function ProductDetailModal({ product, onClose }) {
             href={waLink}
             target="_blank"
             rel="noopener noreferrer"
+            onClick={() => {
+              try {
+                const orders = JSON.parse(localStorage.getItem('vip_wa_orders') || '[]');
+                orders.push({ product: product.name, size: selectedSize, price: product.price || 500, date: new Date().toISOString() });
+                localStorage.setItem('vip_wa_orders', JSON.stringify(orders));
+              } catch {}
+            }}
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '10px',
-              width: '100%',
-              padding: '14px 0',
-              marginTop: '20px',
-              borderRadius: '9999px',
-              background: '#25D366',
-              color: '#ffffff',
-              fontFamily: 'Montserrat, Inter, sans-serif',
-              fontSize: '13px',
-              fontWeight: '700',
-              letterSpacing: '1.5px',
-              textTransform: 'uppercase',
-              textDecoration: 'none',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              gap: '10px', width: '100%', padding: '14px 0',
+              borderRadius: '14px', background: '#25D366',
+              color: '#ffffff', fontSize: '14px', fontWeight: '700',
+              letterSpacing: '0.5px', textDecoration: 'none',
+              boxShadow: '0 4px 16px rgba(37,211,102,0.25)',
             }}
           >
-            <svg viewBox="0 0 24 24" fill="white" style={{ width: '18px', height: '18px' }}>
+            <svg viewBox="0 0 24 24" fill="white" style={{ width: '20px', height: '20px' }}>
               <path d={WA_ICON} />
             </svg>
             اطلب الآن / ORDER NOW
           </a>
 
-          <p
-            className="ar"
-            style={{
-              fontSize: '9px',
-              color: 'rgba(153,153,159,0.5)',
-              textAlign: 'center',
-              marginTop: '8px',
-            }}
-          >
+          <p style={{
+            fontSize: '10px', color: 'rgba(153,153,159,0.4)',
+            textAlign: 'center', margin: '8px 0 0',
+          }}>
             سيتم فتح واتساب · مقاس {selectedSize}
           </p>
         </div>

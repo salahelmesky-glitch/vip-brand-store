@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import logo from '../assets/logo.jpg';
 
 export default function Hero() {
@@ -12,6 +13,68 @@ export default function Hero() {
 
       {/* Content */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', animation: 'fadeInUp 0.8s ease-out' }}>
+
+        {/* ★ Navigate to Page 2 — Glowing Arrow ★ */}
+        <Link
+          to="/page2"
+          className="page2-arrow-btn group"
+          style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '6px',
+            marginBottom: '18px',
+            textDecoration: 'none',
+            cursor: 'pointer',
+            animation: 'fadeInUp 0.6s ease-out',
+          }}
+        >
+          {/* Arrow circle */}
+          <div
+            className="page2-arrow-circle"
+            style={{
+              width: '48px',
+              height: '48px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(191, 64, 191, 0.08)',
+              border: '1.5px solid rgba(191, 64, 191, 0.35)',
+              transition: 'all 0.35s ease',
+            }}
+          >
+            <svg
+              width="22"
+              height="22"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#d966d9"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              style={{ transition: 'transform 0.3s ease' }}
+              className="page2-arrow-icon"
+            >
+              <path d="M7 17l9.2-9.2M17 17V7H7" />
+            </svg>
+          </div>
+          {/* Label */}
+          <span
+            style={{
+              fontSize: '9px',
+              letterSpacing: '0.25em',
+              textTransform: 'uppercase',
+              color: '#99999f',
+              fontWeight: '500',
+              transition: 'color 0.3s ease',
+            }}
+            className="page2-arrow-label"
+          >
+            Page 2 / صفحة ٢
+          </span>
+        </Link>
+
 
         {/* Eagle Logo */}
         <div style={{ marginBottom: '24px' }}>
@@ -129,6 +192,26 @@ export default function Hero() {
         @keyframes scrollBounce {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(8px); }
+        }
+        /* Page 2 Arrow Animations */
+        .page2-arrow-circle {
+          animation: arrowPulse 2.5s ease-in-out infinite;
+        }
+        @keyframes arrowPulse {
+          0%, 100% { box-shadow: 0 0 12px rgba(191,64,191,0.15); }
+          50% { box-shadow: 0 0 25px rgba(191,64,191,0.35); }
+        }
+        .page2-arrow-btn:hover .page2-arrow-circle {
+          background: rgba(191, 64, 191, 0.18) !important;
+          border-color: rgba(217, 102, 217, 0.7) !important;
+          box-shadow: 0 0 30px rgba(191,64,191,0.4);
+        }
+        .page2-arrow-btn:hover .page2-arrow-icon {
+          stroke: #ffffff;
+          transform: translate(2px, -2px);
+        }
+        .page2-arrow-btn:hover .page2-arrow-label {
+          color: #d966d9 !important;
         }
       `}</style>
     </section>

@@ -14,6 +14,7 @@ import { fileURLToPath } from 'url';
 import multer from 'multer';
 import { connectDB } from './config/db.js';
 import productRoutes from './routes/productRoutes.js';
+import userRoutes from './routes/userRoutes.js';
 
 dotenv.config();
 
@@ -84,6 +85,7 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 
 /* ─── Routes ─────────────────────────────── */
 app.use('/api/products', productRoutes);
+app.use('/api/users', userRoutes);
 
 /* ─── 404 Handler ────────────────────────── */
 app.use((_req, res) => {
