@@ -32,9 +32,9 @@ export default function UsersPage() {
 
   useEffect(() => { fetchUsers(); }, [fetchUsers]);
 
-  /* ── Add points to user ── */
-  const addPoints = async (email, pts) => {
-    if (!pts || pts <= 0) return;
+  /* ── Modify points (add or subtract) ── */
+  const modifyPoints = async (email, pts) => {
+    if (!pts || parseInt(pts) === 0) return;
     setActionLoading(email);
     try {
       const res = await fetch('/api/users?action=admin-addpoints', {
@@ -44,7 +44,7 @@ export default function UsersPage() {
       });
       const json = await res.json();
       if (json.success) {
-        setSuccess(`✅ تم إضافة ${pts} نقطة لـ ${email}`);
+        setSuccess(`✅ تم تعديل ${Math.abs(pts)} نقطة لـ ${email}`);
         setTimeout(() => setSuccess(''), 3000);
         fetchUsers();
         setPtsMod(prev => ({ ...prev, [email]: '' }));
@@ -167,8 +167,8 @@ export default function UsersPage() {
                 📅 انضم: {new Date(u.createdAt).toLocaleDateString('ar-EG')} · {new Date(u.createdAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
               </p>
 
-              {/* Add points controls */}
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              {/* Points controls — Add & Subtract */}
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                 <input
                   type="number" min="1" placeholder="عدد النقاط"
                   value={ptsMod[u.email] || ''}
@@ -180,13 +180,21 @@ export default function UsersPage() {
                     fontSize: 12, outline: 'none', minWidth: 0,
                   }}
                 />
-                <button disabled={actionLoading === u.email} onClick={() => addPoints(u.email, ptsMod[u.email])} style={{
-                  padding: '8px 14px', borderRadius: 10, border: 'none',
+                <button disabled={actionLoading === u.email} onClick={() => modifyPoints(u.email, ptsMod[u.email])} style={{
+                  padding: '8px 12px', borderRadius: 10, border: 'none',
                   background: 'linear-gradient(135deg, #25D366, #128C7E)',
                   color: '#fff', fontSize: 11, fontWeight: 700, cursor: 'pointer',
                   whiteSpace: 'nowrap', flexShrink: 0,
                 }}>
-                  {actionLoading === u.email ? '...' : '➕ نقاط'}
+                  {actionLoading === u.email ? '...' : '➕ زود'}
+                </button>
+                <button disabled={actionLoading === u.email} onClick={() => modifyPoints(u.email, -(Math.abs(parseInt(ptsMod[u.email]) || 0)))} style={{
+                  padding: '8px 12px', borderRadius: 10, border: 'none',
+                  background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)',
+                  color: '#ff6b6b', fontSize: 11, fontWeight: 700, cursor: 'pointer',
+                  whiteSpace: 'nowrap', flexShrink: 0,
+                }}>
+                  {actionLoading === u.email ? '...' : '➖ نقص'}
                 </button>
               </div>
             </div>

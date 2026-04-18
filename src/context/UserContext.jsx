@@ -22,6 +22,16 @@ export const UserProvider = ({ children }) => {
     else localStorage.removeItem('vip_user');
   }, [user]);
 
+  /* Auto-sync from server on mount (fixes stale localStorage points) */
+  useEffect(() => {
+    if (!user?.email) return;
+    fetch(`${API}/users?email=${encodeURIComponent(user.email)}`)
+      .then(r => r.json())
+      .then(json => { if (json.success && json.data) setUser(json.data); })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   /* ── Register ── */
   const register = useCallback(async (email, password, name) => {
     setLoading(true); setError(null);
