@@ -1,10 +1,13 @@
 import { useAdmin } from '../context/AdminContext';
+import logo from '../assets/logo.jpg';
 
 const NAV_ITEMS = [
   { key: 'dashboard', icon: '📊', label: 'Dashboard' },
+  { key: 'store-orders', icon: '🛍️', label: 'طلبات المتجر' },
   { key: 'products', icon: '📦', label: 'Products' },
   { key: 'orders', icon: '🛒', label: 'Orders' },
   { key: 'users', icon: '👥', label: 'Users' },
+  { key: 'newsletter', icon: '📭', label: 'النشرة البريدية' },
   { key: 'videos', icon: '🎬', label: 'Videos' },
   { key: 'site-settings', icon: '⚙️', label: 'Settings' },
 ];
@@ -42,15 +45,17 @@ export default function AdminSidebar({ currentPage, onNavigate, isMobileOpen, on
         <div style={{
           padding: '28px 24px 20px',
           borderBottom: '1px solid rgba(191,64,191,0.08)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
         }}>
-          <div style={{
-            fontSize: 28, fontWeight: 900,
-            fontFamily: "'Orbitron', sans-serif",
-            letterSpacing: '0.12em',
-            background: 'linear-gradient(135deg, #fff, #bf40bf, #7b2fff)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            filter: 'drop-shadow(0 0 20px rgba(191,64,191,0.3))',
-          }}>VIP</div>
+          <img src={logo} alt="VIP Logo" style={{ 
+            width: 70, height: 70, 
+            borderRadius: '50%', 
+            marginBottom: 8, 
+            boxShadow: '0 0 20px rgba(191,64,191,0.3)', 
+            objectFit: 'cover' 
+          }} />
           <p style={{
             fontSize: 9, color: 'rgba(153,153,159,0.4)',
             letterSpacing: '0.25em', textTransform: 'uppercase', marginTop: 4,
@@ -97,6 +102,14 @@ export default function AdminSidebar({ currentPage, onNavigate, isMobileOpen, on
                     padding: '2px 7px', borderRadius: 99,
                     minWidth: 20, textAlign: 'center',
                   }}>{stats.pendingOrders}</span>
+                )}
+                {item.key === 'store-orders' && stats.pendingStoreOrders > 0 && (
+                  <span style={{
+                    marginLeft: 'auto', fontSize: 10, fontWeight: 700,
+                    background: '#f59e0b', color: '#fff',
+                    padding: '2px 7px', borderRadius: 99,
+                    minWidth: 20, textAlign: 'center',
+                  }}>{stats.pendingStoreOrders}</span>
                 )}
               </button>
             );

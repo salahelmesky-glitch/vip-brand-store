@@ -8,9 +8,21 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title>VIP Brand — Luxury Streetwear</title>
     <meta name="description" content="VIP Brand — Exclusive luxury streetwear. Premium hoodies, t-shirts & accessories. Shop now via WhatsApp." />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      // Clear old cached data from previous versions
+      try {
+        localStorage.removeItem('vip_maintenance');
+        localStorage.removeItem('vip_videos');
+        localStorage.removeItem('vip_prizes');
+        localStorage.removeItem('vip_mystery_text');
+      } catch(e) {}
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

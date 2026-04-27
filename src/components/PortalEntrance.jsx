@@ -6,9 +6,9 @@ export default function PortalEntrance({ onComplete }) {
   const [phase, setPhase] = useState('logo'); // logo → done
 
   useEffect(() => {
-    // Quick intro: logo for 2s then fade out
-    const t1 = setTimeout(() => setPhase('done'), 2000);
-    const t2 = setTimeout(() => onComplete?.(), 2300);
+    // Exact 1-second intro logo appearance as requested
+    const t1 = setTimeout(() => setPhase('done'), 1000);
+    const t2 = setTimeout(() => onComplete?.(), 1250);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [onComplete]);
 
@@ -25,7 +25,7 @@ export default function PortalEntrance({ onComplete }) {
         alignItems: 'center',
         justifyContent: 'center',
         background: '#000000',
-        animation: phase === 'done' ? 'fadeOut 0.3s forwards' : undefined,
+        animation: phase === 'done' ? 'fadeOut 0.25s forwards' : undefined,
       }}
     >
       {/* Eagle Logo — simple fade in */}
@@ -35,7 +35,7 @@ export default function PortalEntrance({ onComplete }) {
           height: '150px',
           borderRadius: '50%',
           overflow: 'hidden',
-          animation: 'splashGlow 2s ease-in-out infinite, logoIn 1s ease-out',
+          animation: 'splashGlow 2s ease-in-out infinite, logoIn 0.5s ease-out',
           boxShadow: '0 0 40px rgba(188,19,254,0.4), 0 0 80px rgba(188,19,254,0.15)',
         }}
       >
@@ -54,7 +54,7 @@ export default function PortalEntrance({ onComplete }) {
           fontSize: '14px',
           letterSpacing: '0.4em',
           color: 'rgba(191,64,191,0.6)',
-          animation: 'logoIn 1s ease-out 0.3s both',
+          animation: 'logoIn 0.5s ease-out 0.1s both',
         }}
       >
         VIP BRAND

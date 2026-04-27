@@ -47,15 +47,15 @@ body {
 ::-webkit-scrollbar-track { background: var(--color-obsidian); }
 ::-webkit-scrollbar-thumb { background: var(--color-holo-dim); border-radius: 99px; }
 
-/* ─── Glass Utility (simplified - no blur on mobile) ─── */
+/* ─── Glass Utility (Restored but lighter) ─── */
 .glass {
   background: var(--color-glass);
   border: 1px solid var(--color-glass-border);
 }
 @media (min-width: 769px) {
   .glass {
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 }
 
@@ -69,6 +69,8 @@ body {
 .glow-whatsapp {
   box-shadow: 0 0 18px rgba(37, 211, 102, 0.4);
 }
+
+/* ═══ PAGE TRANSITIONS ERADICATED FOR INSTANT LOAD ═══ */
 
 /* ═══ VIP COSMIC LOGO ═══ */
 .vip-cosmic {
@@ -119,7 +121,6 @@ body {
 }
 
 /* ═══ LIGHTWEIGHT CARD SYSTEM ═══ */
-
 .holo-card {
   display: block;
   border-radius: 1rem;
@@ -136,7 +137,7 @@ body {
 }
 
 .holo-card:hover img {
-  transform: scale(1.04);
+  transform: scale(1.02);
 }
 
 /* ─── Arabic Text Helper ─── */
@@ -159,15 +160,15 @@ body {
   }
 }
 
-/* ═══ EAGLE LOGO 3D ROTATION ═══ */
+/* ═══ EAGLE LOGO RESTORED ═══ */
 .logo-container {
   width: 42px;
   height: 42px;
   border-radius: 50%;
   overflow: hidden;
   animation: rotate3D 8s linear infinite;
-  border: 2px solid rgba(191, 64, 191, 0.4);
-  box-shadow: 0 0 15px rgba(191, 64, 191, 0.2);
+  border: 1px solid rgba(166, 94, 166, 0.3);
+  box-shadow: 0 0 10px rgba(166, 94, 166, 0.1);
   flex-shrink: 0;
 }
 

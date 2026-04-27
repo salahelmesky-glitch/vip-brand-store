@@ -1,27 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
+import { useAdmin } from '../context/AdminContext';
 
 const WA = '201006527185';
-
-/* ─── Default Prizes (admin can override via localStorage) ─── */
-function getPrizes() {
-  try { const p = JSON.parse(localStorage.getItem('vip_prizes')); if (p?.length) return p; } catch {}
-  return [
-    { id: 'discount_10', labelAr: 'خصم ١٠٪', color: '#ff6b6b', icon: '🏷️' },
-    { id: 'bonus_30', labelAr: '+٣٠ نقطة', color: '#ffd43b', icon: '⭐' },
-    { id: 'free_shipping', labelAr: 'شحن مجاني', color: '#69db7c', icon: '🚚' },
-    { id: 'discount_20', labelAr: 'خصم ٢٠٪', color: '#da77f2', icon: '🔥' },
-    { id: 'try_again', labelAr: 'حاول تاني', color: '#868e96', icon: '🔄' },
-    { id: 'free_tshirt', labelAr: 'تيشيرت مجاني!', color: '#00ff66', icon: '👕' },
-  ];
-}
-function getGiftText() {
-  return localStorage.getItem('vip_gift_text') || '🎁 مبروك! كسبت خصم 50% على طلبك القادم!';
-}
-function getMysteryText() {
-  return localStorage.getItem('vip_mystery_text') || '🎉 ألف مبروك! كسبت معانا هدية حصرية!';
-}
 
 /* ═══════════════════════════════════════════════
    REWARD POPUP (WhatsApp CTA)
@@ -59,17 +41,18 @@ function RewardPopup({ show, title, subtitle, onClose }) {
 }
 
 /* ═══════════════════════════════════════════════
-   SPIN WHEEL (Canvas) — 400 points
+   SPIN WHEEL (Canvas) — prizes from API
    ═══════════════════════════════════════════════ */
-function SpinWheel({ onSpin, isLoggedIn, userPoints }) {
+function SpinWheel({ onSpin, isLoggedIn, userPoints, spinCost, prizes }) {
   const canvasRef = useRef(null);
   const [spinning, setSpinning] = useState(false);
   const [angle, setAngle] = useState(0);
   const [result, setResult] = useState(null);
   const animRef = useRef(null);
-  const PRIZES = getPrizes();
+  const PRIZES = prizes;
+  const cost = spinCost || 75;
 
-  const canSpin = isLoggedIn && userPoints >= 400;
+  const canSpin = isLoggedIn && userPoints >= cost;
 
   useEffect(() => {
     const canvas = canvasRef.current; if (!canvas) return;
@@ -98,7 +81,6 @@ function SpinWheel({ onSpin, isLoggedIn, userPoints }) {
     if (spinning || !canSpin) return;
     setSpinning(true); setResult(null);
 
-    // 1) Call server FIRST — get the prize + deduct points immediately
     const r = await onSpin();
     if (!r?.success) { setSpinning(false); return; }
 
@@ -106,21 +88,15 @@ function SpinWheel({ onSpin, isLoggedIn, userPoints }) {
     const numSlices = PRIZES.length;
     const sliceAngle = (2 * Math.PI) / numSlices;
 
-    // 2) Calculate target angle so the arrow (right side, angle=0) lands on the winning slice
-    //    The arrow points at angle 0 (right). Slice i covers from i*sliceAngle to (i+1)*sliceAngle.
-    //    We want: (targetAngle + prizeIdx * sliceAngle + sliceAngle/2) mod 2π ≈ 0  (pointing right)
-    //    So targetAngle = -(prizeIdx * sliceAngle + sliceAngle/2)
     const targetSliceCenter = -(prizeIdx * sliceAngle + sliceAngle / 2);
-    // Add multiple full rotations for visual effect
     const fullSpins = Math.PI * 2 * (6 + Math.floor(Math.random() * 3));
     const targetAngle = fullSpins + targetSliceCenter;
 
-    // 3) Animate to that exact angle
     const dur = 3500, st = Date.now(), sa = angle;
     const totalRot = targetAngle - sa;
     const anim = () => {
       const p = Math.min((Date.now() - st) / dur, 1);
-      const ease = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      const ease = 1 - Math.pow(1 - p, 3);
       setAngle(sa + totalRot * ease);
       if (p < 1) { animRef.current = requestAnimationFrame(anim); }
       else { setResult(r.prize); setSpinning(false); }
@@ -128,11 +104,11 @@ function SpinWheel({ onSpin, isLoggedIn, userPoints }) {
     animRef.current = requestAnimationFrame(anim);
   };
 
-  const btnText = !isLoggedIn ? '🔒 سجل الدخول لتشترك' : userPoints < 400 ? `🔒 محتاج ${400 - userPoints} نقطة كمان` : spinning ? '🎰 ...' : '🎰 لف العجلة!';
+  const btnText = !isLoggedIn ? '🔒 سجل الدخول لتشترك' : userPoints < cost ? `🔒 محتاج ${cost - userPoints} نقطة كمان` : spinning ? '🎰 ...' : '🎰 لف العجلة!';
 
   return (
     <div style={cardStyle}>
-      <p style={secLabel}>🎰 عجلة الحظ / SPIN WHEEL <span style={{ color: '#666', fontWeight: 400 }}>(400 نقطة)</span></p>
+      <p style={secLabel}>🎰 عجلة الحظ / SPIN WHEEL <span style={{ color: '#666', fontWeight: 400 }}>({cost} نقطة)</span></p>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
         <canvas ref={canvasRef} width={300} height={300} style={{
           borderRadius: '50%', border: '4px solid rgba(191,64,191,0.35)',
@@ -186,8 +162,9 @@ function RewardCard({ icon, title, desc, cost, onClaim, isLoggedIn, userPoints }
    SECTIONS: Video, Newsletter, Footer (compact)
    ═══════════════════════════════════════════════ */
 function VideoSection() {
-  const [videos, setVideos] = useState([]);
-  useEffect(() => { try { setVideos(JSON.parse(localStorage.getItem('vip_videos') || '[]')); } catch {} }, []);
+  /* Videos now come from AdminContext (MongoDB API) — synced for all clients! */
+  const { videos } = useAdmin();
+
   if (!videos.length) return (
     <div style={cardStyle}><p style={secLabel}>🎬 فيديوهاتنا / OUR VIDEOS</p>
       <p style={{ textAlign: 'center', color: '#555', fontSize: 12, margin: '16px 0' }}>قريباً هنضيف فيديوهات حصرية! 🎥</p></div>
@@ -207,17 +184,49 @@ function VideoSection() {
 }
 
 function Newsletter() {
-  const [email, setEmail] = useState(''); const [done, setDone] = useState(false);
+  const [email, setEmail] = useState('');
+  const [done, setDone] = useState(() => {
+    try { return localStorage.getItem('vip_newsletter_subscribed') === 'true'; } catch { return false; }
+  });
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!email || loading) return;
+    setLoading(true);
+    try {
+      await fetch('/api/newsletter', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      setDone(true);
+      localStorage.setItem('vip_newsletter_subscribed', 'true');
+    } catch (err) {
+      console.error('Newsletter error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div style={{ padding: '28px 20px', borderRadius: 18, textAlign: 'center', background: 'linear-gradient(135deg, rgba(191,64,191,0.08), rgba(123,47,255,0.05))', border: '1px solid rgba(191,64,191,0.15)' }}>
       <p style={{ fontSize: 10, letterSpacing: '0.25em', color: '#bf40bf', fontWeight: 600, margin: '0 0 6px', textTransform: 'uppercase' }}>★ النشرة البريدية ★</p>
       <h3 style={{ fontSize: 20, fontWeight: 900, color: '#f2f2f7', margin: '0 0 6px' }}>انضم إلينا</h3>
       <p style={{ fontSize: 11, color: '#888', margin: '0 0 16px', lineHeight: 1.6 }}>كن أول من يعرف عن العروض الحصرية</p>
-      {done ? <p style={{ fontSize: 14, color: '#00ff66', fontWeight: 700 }}>✅ تم الاشتراك!</p> : (
-        <form onSubmit={e => { e.preventDefault(); if (email) { setDone(true); setEmail(''); } }} style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320, margin: '0 auto' }}>
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="بريدك الإلكتروني" style={{ padding: '11px 14px', borderRadius: 12, border: '1px solid rgba(191,64,191,0.2)', background: 'rgba(255,255,255,0.04)', color: '#f2f2f7', fontSize: 13, outline: 'none', textAlign: 'center', width: '100%', boxSizing: 'border-box' }} />
-          <button type="submit" style={{ padding: 12, borderRadius: 12, border: '1px solid rgba(191,64,191,0.3)', background: 'rgba(191,64,191,0.1)', color: '#f2f2f7', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>اشترك الآن</button>
-        </form>)}
+      {done ? (
+        <div style={{ padding: '20px', background: 'rgba(0,255,102,0.1)', borderRadius: 12, border: '1px solid rgba(0,255,102,0.3)' }}>
+          <p style={{ fontSize: 16, color: '#00ff66', fontWeight: 800, margin: 0 }}>✅ أنت مشترك بالفعل!</p>
+          <p style={{ fontSize: 11, color: '#888', margin: '6px 0 0' }}>شكراً لانضمامك لعائلة VIP</p>
+        </div>
+      ) : (
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 8, maxWidth: 320, margin: '0 auto' }}>
+          <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="بريدك الإلكتروني" style={{ padding: '11px 14px', borderRadius: 12, border: '1px solid rgba(191,64,191,0.2)', background: 'rgba(255,255,255,0.04)', color: '#f2f2f7', fontSize: 13, outline: 'none', textAlign: 'center', width: '100%', boxSizing: 'border-box' }} />
+          <button type="submit" disabled={loading} style={{ padding: 12, borderRadius: 12, border: '1px solid rgba(191,64,191,0.3)', background: 'rgba(191,64,191,0.1)', color: '#f2f2f7', fontSize: 13, fontWeight: 700, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading ? 0.6 : 1 }}>
+            {loading ? 'جاري الاشتراك...' : 'اشترك الآن'}
+          </button>
+        </form>
+      )}
     </div>
   );
 }
@@ -226,13 +235,48 @@ function PremiumFooter() {
   return (
     <footer style={{ background: '#0a0a14', padding: '32px 20px 18px', marginTop: 10, borderTop: '1px solid rgba(191,64,191,0.08)' }}>
       <div style={{ maxWidth: 480, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 16 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, background: 'linear-gradient(135deg, #bf40bf, #7b2fff)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 900, color: '#fff' }}>V</div>
           <div>
             <h4 style={{ fontSize: 16, fontWeight: 900, margin: '0 0 4px', color: '#f2f2f7', letterSpacing: '0.1em' }}>VIP</h4>
             <p style={{ fontSize: 10, color: '#888', margin: 0, lineHeight: 1.5, maxWidth: 280 }}>براند مصري من كفر الشيخ · Streetwear بجودة عالمية.</p>
           </div>
         </div>
+
+        {/* Social Links */}
+        <div style={{ display: 'flex', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+          <a href="https://tiktok.com/@vip0.4" target="_blank" rel="noopener noreferrer" style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 20,
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(191,64,191,0.15)',
+            textDecoration: 'none', color: '#ccc', fontSize: 11, fontWeight: 600,
+            transition: 'all 0.2s',
+          }}>
+            <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 14, height: 14 }}>
+              <path d="M16.6 5.82s.51.5 0 0A4.28 4.28 0 0 1 15.54 3h-3.09v12.4a2.59 2.59 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64 0 3.33 2.76 5.7 5.69 5.7 3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48z" />
+            </svg>
+            TikTok
+          </a>
+          <a href="https://www.instagram.com/vipjs.js19?igsh=MTBwdG9hOTBhY2Mx" target="_blank" rel="noopener noreferrer" style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 20,
+            background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(191,64,191,0.15)',
+            textDecoration: 'none', color: '#ccc', fontSize: 11, fontWeight: 600,
+            transition: 'all 0.2s',
+          }}>
+            <svg viewBox="0 0 24 24" fill="currentColor" style={{ width: 14, height: 14 }}>
+              <path d="M7.8 2h8.4C19.4 2 22 4.6 22 7.8v8.4a5.8 5.8 0 01-5.8 5.8H7.8C4.6 22 2 19.4 2 16.2V7.8A5.8 5.8 0 017.8 2zm-.2 2A3.6 3.6 0 004 7.6v8.8C4 18.39 5.61 20 7.6 20h8.8a3.6 3.6 0 003.6-3.6V7.6C20 5.61 18.39 4 16.4 4H7.6zm9.65 1.5a1.25 1.25 0 110 2.5 1.25 1.25 0 010-2.5zM12 7a5 5 0 110 10 5 5 0 010-10zm0 2a3 3 0 100 6 3 3 0 000-6z" />
+            </svg>
+            Instagram
+          </a>
+          <a href="https://wa.me/201006527185" target="_blank" rel="noopener noreferrer" style={{
+            display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 20,
+            background: 'rgba(37,211,102,0.06)', border: '1px solid rgba(37,211,102,0.2)',
+            textDecoration: 'none', color: '#25D366', fontSize: 11, fontWeight: 600,
+            transition: 'all 0.2s',
+          }}>
+            💬 WhatsApp
+          </a>
+        </div>
+
         <div style={{ height: 1, background: 'rgba(255,255,255,0.05)', margin: '0 0 12px' }} />
         <p style={{ textAlign: 'center', fontSize: 9, color: 'rgba(255,255,255,0.2)', margin: 0 }}>© 2026 VIP Brand. All rights reserved.</p>
       </div>
@@ -244,19 +288,18 @@ function PremiumFooter() {
    MAIN PAGE 2
    ═══════════════════════════════════════════════ */
 export default function EmptyPage2() {
-  const { user, isLoggedIn, spinWheel, claimGift, claimMystery, leaderboard, fetchLeaderboard } = useUser();
+  const { user, isLoggedIn, spinWheel, claimMystery, leaderboard, fetchLeaderboard } = useUser();
+  const { rewardCosts, prizes, mysteryText } = useAdmin();
   const [popup, setPopup] = useState(null);
   const pts = user?.points || 0;
+  const spinCost = rewardCosts?.spinCost || 75;
+  const mysteryCost = rewardCosts?.mysteryCost || 100;
 
   useEffect(() => { fetchLeaderboard(); }, [fetchLeaderboard]);
 
-  const handleGift = async () => {
-    const r = await claimGift();
-    if (r?.success) setPopup({ title: getGiftText(), subtitle: 'تعالا اطلب هديتك عبر الواتساب وهنوصلهالك!' });
-  };
   const handleMystery = async () => {
     const r = await claimMystery();
-    if (r?.success) setPopup({ title: getMysteryText(), subtitle: 'ألف مبروك كسبت معانا هدية حصرية!\nتعالا واطلبها عبر الواتساب وهنوصلهالك!' });
+    if (r?.success) setPopup({ title: mysteryText, subtitle: 'ألف مبروك كسبت معانا هدية حصرية!\nتعالا واطلبها عبر الواتساب وهنوصلهالك!' });
   };
 
   return (
@@ -297,13 +340,11 @@ export default function EmptyPage2() {
         {/* Rewards */}
         <div style={cardStyle}>
           <p style={secLabel}>🎁 المكافآت المتاحة</p>
-          <RewardCard icon="🎁" title="هدية حصرية / Gift" desc="خصم 50% على طلبك" cost={100} onClaim={handleGift} isLoggedIn={isLoggedIn} userPoints={pts} />
-          <div style={{ height: 12 }} />
-          <RewardCard icon="📦" title="صندوق الغموض / Mystery" desc="هدية حصرية مفاجأة" cost={200} onClaim={handleMystery} isLoggedIn={isLoggedIn} userPoints={pts} />
+          <RewardCard icon="📦" title="صندوق الغموض / Mystery" desc="هدية حصرية مفاجأة" cost={mysteryCost} onClaim={handleMystery} isLoggedIn={isLoggedIn} userPoints={pts} />
         </div>
 
-        {/* Spin */}
-        <SpinWheel onSpin={spinWheel} isLoggedIn={isLoggedIn} userPoints={pts} />
+        {/* Spin — pass prizes from API */}
+        <SpinWheel onSpin={spinWheel} isLoggedIn={isLoggedIn} userPoints={pts} spinCost={spinCost} prizes={prizes} />
 
         {/* Leaderboard */}
         {leaderboard.length > 0 && (

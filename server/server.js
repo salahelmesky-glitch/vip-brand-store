@@ -15,6 +15,8 @@ import multer from 'multer';
 import { connectDB } from './config/db.js';
 import productRoutes from './routes/productRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import storeOrderRoutes from './routes/storeOrderRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
 
 dotenv.config();
 
@@ -86,6 +88,8 @@ app.post('/api/upload', upload.single('image'), (req, res) => {
 /* ─── Routes ─────────────────────────────── */
 app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/store-orders', storeOrderRoutes);
+app.use('/api/settings', settingsRoutes);
 
 /* ─── 404 Handler ────────────────────────── */
 app.use((_req, res) => {

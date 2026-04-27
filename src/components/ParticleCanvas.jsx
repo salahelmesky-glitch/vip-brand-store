@@ -20,8 +20,8 @@ export default function StarfieldCanvas() {
     };
     resize();
 
-    // Drastically reduced star count
-    const starCount = isMobile ? 80 : 200;
+    // Drastically reduced star count for maximum lightweight performance
+    const starCount = isMobile ? 35 : 100;
     const stars = [];
 
     for (let i = 0; i < starCount; i++) {
@@ -37,8 +37,8 @@ export default function StarfieldCanvas() {
 
     let time = 0;
     let lastFrame = 0;
-    // Target ~20fps on mobile, ~30fps on desktop
-    const frameInterval = isMobile ? 50 : 33;
+    // Target ~15fps on mobile, ~24fps on desktop (saves massive battery)
+    const frameInterval = isMobile ? 66 : 41;
 
     const animate = (timestamp) => {
       if (timestamp - lastFrame < frameInterval) {

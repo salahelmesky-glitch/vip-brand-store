@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo.jpg';
+import { useAdmin } from '../context/AdminContext';
 
 export default function Hero() {
+  const { siteTexts } = useAdmin();
   return (
     <section
       id="hero"
@@ -12,7 +14,7 @@ export default function Hero() {
       <div className="pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] md:w-[500px] h-[300px] md:h-[500px] rounded-full blur-[100px]" style={{ background: 'rgba(191,64,191,0.05)' }} />
 
       {/* Content */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%', animation: 'fadeInUp 0.8s ease-out' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
 
         {/* ★ Navigate to Page 2 — Glowing Arrow ★ */}
         <Link
@@ -26,7 +28,6 @@ export default function Hero() {
             marginBottom: '18px',
             textDecoration: 'none',
             cursor: 'pointer',
-            animation: 'fadeInUp 0.6s ease-out',
           }}
         >
           {/* Arrow circle */}
@@ -89,16 +90,16 @@ export default function Hero() {
 
         {/* Subtitle */}
         <p
-          className="text-[10px] md:text-sm tracking-[0.3em] md:tracking-[0.4em] uppercase font-medium"
-          style={{ marginBottom: '20px', color: '#bf40bf' }}
+          className="text-[10px] md:text-sm tracking-[0.2em] md:tracking-[0.3em] uppercase font-medium mx-auto text-center"
+          style={{ marginBottom: '24px', color: '#bf40bf', width: '95%', maxWidth: '380px', lineHeight: '1.6' }}
         >
-          ★ Exclusive Luxury Streetwear / أزياء فاخرة حصرية ★
+          {siteTexts?.heroSubtitle || '★ Exclusive Luxury Streetwear / أزياء فاخرة حصرية ★'}
         </p>
 
         {/* VIP Title */}
-        <div className="relative z-10" style={{ marginBottom: '20px' }}>
-          <h1 className="font-heading text-[4.5rem] sm:text-[7rem] md:text-[11rem] lg:text-[15rem] font-black leading-none vip-cosmic relative select-none">
-            VIP
+        <div className="relative z-10 w-full flex justify-center items-center" style={{ marginBottom: '20px' }}>
+          <h1 className="font-heading text-[6.5rem] sm:text-[8rem] md:text-[12rem] lg:text-[16rem] font-black leading-none vip-cosmic relative select-none break-words text-center m-0 p-0">
+            {siteTexts?.brandName || 'VIP'}
           </h1>
           <div className="absolute inset-0 vip-shimmer pointer-events-none" />
         </div>
@@ -109,11 +110,11 @@ export default function Hero() {
         {/* Tagline */}
         <p
           className="text-sm md:text-lg font-light leading-relaxed"
-          style={{ marginBottom: '32px', textAlign: 'center', maxWidth: '500px', padding: '0 16px', color: '#99999f' }}
+          style={{ marginBottom: '32px', textAlign: 'center', maxWidth: '320px', md: { maxWidth: '500px' }, padding: '0 16px', color: '#99999f', marginInline: 'auto' }}
         >
-          Redefining luxury for the digital era.
+          {siteTexts?.heroTaglineEn || 'Redefining luxury for the digital era.'}
           <br />
-          <span className="ar text-xs md:text-base">نعيد تعريف الفخامة لعصر جديد.</span>
+          <span className="ar text-xs md:text-base leading-tight mt-1 inline-block">{siteTexts?.heroTaglineAr || 'نعيد تعريف الفخامة لعصر جديد.'}</span>
         </p>
 
         {/* CTA Button */}
@@ -122,7 +123,7 @@ export default function Hero() {
           className="group relative px-10 md:px-12 py-3.5 md:py-4 rounded-full text-white text-xs font-bold tracking-widest uppercase overflow-hidden inline-block"
           style={{ background: 'linear-gradient(135deg, #bf40bf, #7b2fff)', transition: 'box-shadow 0.3s' }}
         >
-          <span className="relative z-10">Shop Now / تسوق الآن</span>
+          <span className="relative z-10">{siteTexts?.ctaButton || 'Shop Now / تسوق الآن'}</span>
         </a>
 
         {/* BOYS / GIRLS Buttons */}
@@ -132,18 +133,15 @@ export default function Hero() {
             justifyContent: 'center',
             alignItems: 'center',
             width: '100%',
-            marginTop: '60px',
-            animation: 'fadeInUp 1s ease-out 0.3s both',
+            marginTop: '40px',
           }}
         >
-          <div style={{ display: 'flex', gap: '40px', justifyContent: 'center', alignItems: 'center' }}>
+          <div className="flex flex-row flex-wrap justify-center items-center gap-3 sm:gap-6 md:gap-10 px-4">
             {/* Boys */}
             <a
               href="#boys-section"
-              className="group relative rounded-2xl overflow-hidden"
+              className="group relative rounded-2xl overflow-hidden w-[145px] sm:w-[160px] h-[100px] sm:h-[120px] flex flex-col items-center justify-center"
               style={{
-                width: '160px', height: '120px',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 background: 'rgba(191, 64, 191, 0.06)',
                 border: '1.5px solid rgba(191, 64, 191, 0.35)',
                 transition: 'box-shadow 0.3s, transform 0.3s',
@@ -158,10 +156,8 @@ export default function Hero() {
             {/* Girls */}
             <a
               href="#girls-section"
-              className="group relative rounded-2xl overflow-hidden"
+              className="group relative rounded-2xl overflow-hidden w-[145px] sm:w-[160px] h-[100px] sm:h-[120px] flex flex-col items-center justify-center"
               style={{
-                width: '160px', height: '120px',
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
                 background: 'rgba(123, 47, 255, 0.06)',
                 border: '1.5px solid rgba(123, 47, 255, 0.35)',
                 transition: 'box-shadow 0.3s, transform 0.3s',
@@ -177,7 +173,7 @@ export default function Hero() {
       </div>
 
       {/* Scroll indicator */}
-      <div className="absolute bottom-6 md:bottom-10 flex flex-col items-center gap-2" style={{ animation: 'fadeInUp 1s ease-out 0.5s both' }}>
+      <div className="absolute bottom-6 md:bottom-10 flex flex-col items-center gap-2">
         <span className="text-[9px] md:text-[10px] tracking-[0.3em] uppercase" style={{ color: '#99999f' }}>Scroll / مرّر</span>
         <div className="w-5 h-8 rounded-full flex justify-center pt-1.5" style={{ border: '1px solid rgba(153,153,159,0.3)' }}>
           <div className="w-1 h-2 rounded-full" style={{ background: '#bf40bf', animation: 'scrollBounce 2s ease-in-out infinite' }} />

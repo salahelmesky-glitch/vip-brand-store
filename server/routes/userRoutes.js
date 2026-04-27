@@ -133,7 +133,7 @@ router.put('/', async (req, res, next) => {
     }
 
     if (action === 'spin') {
-      if (user.points < 50) return res.status(400).json({ success: false, error: 'Not enough points (need 50)' });
+      if (user.points < 75) return res.status(400).json({ success: false, error: 'Not enough points (need 75)' });
       const rand = Math.random() * 100;
       let prize;
       if (rand < 30) prize = 'discount_10';
@@ -142,7 +142,7 @@ router.put('/', async (req, res, next) => {
       else if (rand < 75) prize = 'free_tshirt';
       else if (rand < 90) prize = 'bonus_30';
       else prize = 'try_again';
-      user.points -= 50;
+      user.points -= 75;
       if (prize === 'bonus_30') user.points += 30;
       user.spinHistory.push({ prize, date: new Date() });
       if (!user.rewardsUnlocked.includes('spin')) user.rewardsUnlocked.push('spin');
@@ -160,8 +160,8 @@ router.put('/', async (req, res, next) => {
     }
 
     if (action === 'mystery') {
-      if (user.points < 200) return res.status(400).json({ success: false, error: 'Not enough points (need 200)' });
-      user.points -= 200;
+      if (user.points < 100) return res.status(400).json({ success: false, error: 'Not enough points (need 100)' });
+      user.points -= 100;
       user.mysteryBoxesClaimed += 1;
       if (!user.rewardsUnlocked.includes('mystery')) user.rewardsUnlocked.push('mystery');
       await user.save();

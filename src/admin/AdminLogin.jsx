@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAdmin } from '../context/AdminContext';
+import logo from '../assets/logo.jpg';
 
 export default function AdminLogin() {
   const { login } = useAdmin();
@@ -51,14 +52,14 @@ export default function AdminLogin() {
 
       <div style={{ position: 'relative', width: '100%', maxWidth: 420, zIndex: 10 }}>
         {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 32 }}>
-          <div style={{
-            fontSize: 42, fontWeight: 900, fontFamily: "'Orbitron', sans-serif",
-            letterSpacing: '0.15em',
-            background: 'linear-gradient(135deg, #fff 0%, #bf40bf 50%, #7b2fff 100%)',
-            WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-            filter: 'drop-shadow(0 0 30px rgba(191,64,191,0.4))',
-          }}>VIP</div>
+        <div style={{ textAlign: 'center', marginBottom: 32, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <img src={logo} alt="VIP Logo" style={{ 
+            width: 80, height: 80, 
+            borderRadius: '50%', 
+            marginBottom: 10, 
+            boxShadow: '0 0 30px rgba(191,64,191,0.4)', 
+            objectFit: 'cover' 
+          }} />
           <p style={{
             color: 'rgba(153,153,159,0.6)', fontSize: 11,
             letterSpacing: '0.3em', textTransform: 'uppercase', marginTop: 6,
@@ -87,11 +88,11 @@ export default function AdminLogin() {
                 display: 'block', fontSize: 10, color: 'rgba(153,153,159,0.6)',
                 textTransform: 'uppercase', letterSpacing: '0.15em', marginBottom: 8,
                 fontFamily: "'Orbitron', sans-serif",
-              }}>Email</label>
+              }}>USERNAME</label>
               <input
-                type="email" value={email}
+                type="text" value={email}
                 onChange={(e) => { setEmail(e.target.value); setError(''); }}
-                placeholder="admin@vip.com"
+                placeholder="ادخل اسم المستخدم"
                 required
                 style={{
                   width: '100%', padding: '14px 16px', borderRadius: 14,
@@ -187,7 +188,7 @@ export default function AdminLogin() {
             textAlign: 'center',
           }}>
             <p style={{ fontSize: 10, color: 'rgba(153,153,159,0.4)' }}>
-              Default: admin@vip.com / admin123
+              
             </p>
           </div>
         </div>

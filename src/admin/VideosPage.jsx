@@ -1,42 +1,43 @@
 import { useState, useEffect } from 'react';
+import { useAdmin } from '../context/AdminContext';
 
 /**
  * ────────────────────────────────────────
  *  Admin › Videos Management
  *  Add up to 50 videos (TikTok/Instagram links)
- *  Stored in localStorage for now
+ *  Stored in MongoDB (synced to all clients instantly!)
  * ────────────────────────────────────────
  */
 export default function VideosPage() {
-  const [videos, setVideos] = useState([]);
+  const { videos, updateVideos } = useAdmin();
   const [newUrl, setNewUrl] = useState('');
   const [newTitle, setNewTitle] = useState('');
   const [newThumb, setNewThumb] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    try { const v = JSON.parse(localStorage.getItem('vip_videos') || '[]'); setVideos(v); } catch {}
-  }, []);
-
-  const save = (list) => {
-    setVideos(list);
-    localStorage.setItem('vip_videos', JSON.stringify(list));
-  };
-
-  const addVideo = () => {
+  const addVideo = async () => {
     if (!newUrl) return;
     if (videos.length >= 50) return alert('الحد الأقصى 50 فيديو!');
-    save([{ url: newUrl, title: newTitle || `فيديو #${videos.length + 1}`, thumbnail: newThumb || '' }, ...videos]);
+    setSaving(true);
+    const updated = [{ url: newUrl, title: newTitle || `فيديو #${videos.length + 1}`, thumbnail: newThumb || '' }, ...videos];
+    await updateVideos(updated);
     setNewUrl(''); setNewTitle(''); setNewThumb('');
+    setSaving(false);
   };
 
-  const removeVideo = (idx) => { save(videos.filter((_, i) => i !== idx)); };
+  const removeVideo = async (idx) => {
+    setSaving(true);
+    const updated = videos.filter((_, i) => i !== idx);
+    await updateVideos(updated);
+    setSaving(false);
+  };
 
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, flexWrap: 'wrap', gap: 8 }}>
         <div>
           <h2 style={{ fontSize: 18, fontWeight: 700, margin: 0, color: '#f2f2f7' }}>🎬 الفيديوهات</h2>
-          <p style={{ fontSize: 11, color: '#888', margin: '4px 0 0' }}>Videos · {videos.length}/50</p>
+          <p style={{ fontSize: 11, color: '#888', margin: '4px 0 0' }}>Videos · {videos.length}/50 — التغييرات بتبان عند كل العملاء فوراً!</p>
         </div>
       </div>
 
@@ -62,12 +63,12 @@ export default function VideosPage() {
             placeholder="رابط الصورة المصغرة (اختياري)"
             style={inpStyle}
           />
-          <button onClick={addVideo} style={{
+          <button onClick={addVideo} disabled={saving} style={{
             padding: '10px 0', borderRadius: 10, border: 'none',
-            background: 'linear-gradient(135deg, #bf40bf, #7b2fff)',
-            color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+            background: saving ? '#333' : 'linear-gradient(135deg, #bf40bf, #7b2fff)',
+            color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'wait' : 'pointer',
           }}>
-            ➕ إضافة / Add Video
+            {saving ? '⏳ جاري الحفظ...' : '➕ إضافة / Add Video'}
           </button>
         </div>
       </div>
@@ -93,10 +94,10 @@ export default function VideosPage() {
                 border: '1px solid rgba(0,255,102,0.2)', background: 'rgba(0,255,102,0.06)',
                 textDecoration: 'none',
               }}>🔗</a>
-              <button onClick={() => removeVideo(i)} style={{
+              <button onClick={() => removeVideo(i)} disabled={saving} style={{
                 padding: '4px 8px', borderRadius: 6, fontSize: 10, color: '#ff6b6b',
                 border: '1px solid rgba(255,100,100,0.2)', background: 'rgba(255,100,100,0.06)',
-                cursor: 'pointer',
+                cursor: saving ? 'wait' : 'pointer',
               }}>🗑️</button>
             </div>
           ))}

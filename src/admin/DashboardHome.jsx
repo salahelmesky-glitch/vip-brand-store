@@ -1,16 +1,17 @@
 import { useAdmin } from '../context/AdminContext';
 
 export default function DashboardHome() {
-  const { stats, orders, products } = useAdmin();
+  const { stats, orders, storeOrders, products } = useAdmin();
 
+  const recentStoreOrders = [...(storeOrders || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
   const recentOrders = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
 
   const statCards = [
     { label: 'إجمالي المنتجات', value: stats.totalProducts, icon: '📦', color: '#bf40bf' },
-    { label: 'إجمالي الطلبات', value: stats.totalOrders, icon: '🛒', color: '#7b2fff' },
-    { label: 'الإيرادات', value: `${stats.totalRevenue.toLocaleString()} EGP`, icon: '💰', color: '#25D366' },
-    { label: 'طلبات معلقة', value: stats.pendingOrders, icon: '⏳', color: '#f59e0b' },
-    { label: 'طلبات مكتملة', value: stats.completedOrders, icon: '✅', color: '#10b981' },
+    { label: 'طلبات المتجر', value: stats.totalStoreOrders || 0, icon: '🛍️', color: '#7b2fff' },
+    { label: 'الإيرادات', value: `${(stats.totalRevenue || 0).toLocaleString()} EGP`, icon: '💰', color: '#25D366' },
+    { label: 'طلبات معلقة', value: (stats.pendingStoreOrders || 0), icon: '⏳', color: '#f59e0b' },
+    { label: 'طلبات مكتملة', value: (stats.completedStoreOrders || 0), icon: '✅', color: '#10b981' },
     { label: 'ملغية', value: stats.cancelledOrders, icon: '❌', color: '#ef4444' },
   ];
 
@@ -89,16 +90,16 @@ export default function DashboardHome() {
             fontFamily: "'Montserrat', sans-serif",
             display: 'flex', alignItems: 'center', gap: 8,
           }}>
-            <span>🕐</span> آخر الطلبات
+            <span>🕐</span> آخر طلبات المتجر
           </h3>
 
-          {recentOrders.length === 0 ? (
+          {recentStoreOrders.length === 0 ? (
             <p style={{ fontSize: 13, color: 'rgba(153,153,159,0.4)', textAlign: 'center', padding: 20 }}>
               لا توجد طلبات بعد
             </p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {recentOrders.map((order) => {
+              {recentStoreOrders.map((order) => {
                 const sc = statusColor[order.status] || statusColor.pending;
                 return (
                   <div key={order.id} style={{
@@ -109,10 +110,10 @@ export default function DashboardHome() {
                   }}>
                     <div>
                       <p style={{ fontSize: 12, fontWeight: 600, color: '#f2f2f7' }}>
-                        #{String(order.id).slice(-5)}
+                        {order.productName} · {order.size}
                       </p>
                       <p style={{ fontSize: 10, color: 'rgba(153,153,159,0.4)', marginTop: 2 }}>
-                        {order.total?.toLocaleString()} EGP
+                        📍 {order.governorate} · {order.price} ج.م
                       </p>
                     </div>
                     <span style={{

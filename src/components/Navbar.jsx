@@ -21,17 +21,14 @@ export default function Navbar() {
   }, []);
 
   return (
-    <motion.nav
-      initial={{ y: -80, opacity: 0 }}
-      animate={{ y: 0, opacity: 1 }}
-      transition={{ type: 'spring', stiffness: 100, damping: 20 }}
+    <nav
       className={`fixed top-0 left-0 w-full z-50 transition-all duration-500 ${
         scrolled
           ? 'glass py-2 md:py-3 shadow-[0_4px_30px_rgba(191,64,191,0.06)]'
           : 'bg-transparent py-3 md:py-5'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 md:px-6 flex items-center justify-between">
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 md:px-10 flex items-center justify-between pr-8">
         {/* Brand text only — logo moved to Hero */}
         <a href="#hero" className="flex items-center gap-2 group shrink-0">
           <span className="font-heading text-base md:text-lg font-bold tracking-[0.25em] text-white-95 group-hover:text-holo transition-colors duration-300">
@@ -121,7 +118,7 @@ export default function Navbar() {
           >⚙️</Link>
           <button
             onClick={() => setMenuOpen(!menuOpen)}
-            className="flex flex-col gap-1.5 p-2"
+            className="flex flex-col gap-1.5 p-2 mr-6"
             aria-label="Toggle menu"
           >
             <span className={`block w-6 h-[2px] bg-white-95 transition-all duration-300 ${menuOpen ? 'rotate-45 translate-y-[5px]' : ''}`} />
@@ -184,6 +181,6 @@ export default function Navbar() {
           border-color: rgba(0,255,102,0.7) !important;
         }
       `}</style>
-    </motion.nav>
+    </nav>
   );
 }

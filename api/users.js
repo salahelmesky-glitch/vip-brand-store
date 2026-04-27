@@ -152,8 +152,8 @@ export default async function handler(req, res) {
       const { email } = req.body;
       const user = await User.findOne({ email: email.toLowerCase() });
       if (!user) return res.status(404).json({ success: false, error: 'User not found' });
-      if (user.points < 400) {
-        return res.status(400).json({ success: false, error: 'Not enough points (need 400) / محتاج ٤٠٠ نقطة' });
+      if (user.points < 75) {
+        return res.status(400).json({ success: false, error: 'Not enough points (need 75) / محتاج ٧٥ نقطة' });
       }
 
       // Determine prize
@@ -169,7 +169,7 @@ export default async function handler(req, res) {
       const prizeIds = ['discount_10', 'bonus_30', 'free_shipping', 'discount_20', 'try_again', 'free_tshirt'];
       const prizeIndex = prizeIds.indexOf(prize);
 
-      user.points -= 400;
+      user.points -= 75;
       if (prize === 'bonus_30') user.points += 30;
       user.spinHistory.push({ prize, date: new Date() });
       if (!user.rewardsUnlocked.includes('spin')) user.rewardsUnlocked.push('spin');
@@ -198,10 +198,10 @@ export default async function handler(req, res) {
       const { email } = req.body;
       const user = await User.findOne({ email: email.toLowerCase() });
       if (!user) return res.status(404).json({ success: false, error: 'User not found' });
-      if (user.points < 200) {
-        return res.status(400).json({ success: false, error: 'Not enough points (need 200) / محتاج ٢٠٠ نقطة' });
+      if (user.points < 100) {
+        return res.status(400).json({ success: false, error: 'Not enough points (need 100) / محتاج ١٠٠ نقطة' });
       }
-      user.points -= 200;
+      user.points -= 100;
       user.mysteryBoxesClaimed += 1;
       if (!user.rewardsUnlocked.includes('mystery')) user.rewardsUnlocked.push('mystery');
       await user.save();

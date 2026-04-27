@@ -1,33 +1,63 @@
 import { useRef, useState, useMemo, useCallback } from 'react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useAdmin } from '../context/AdminContext';
 
 /* ─── Helpers ─── */
-const toAr = (n) => String(n).replace(/\d/g, (d) => '٠١٢٣٤٥٦٧٨٩'[d]);
+const WHATSAPP_DEFAULT = '201006527185';
 
-const WHATSAPP = '201006527185';
-const SIZES = ['M', 'L', 'XL', '2XL'];
-
-/* WhatsApp SVG path (reused) */
+/* WhatsApp SVG path */
 const WA_ICON = 'M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z';
 
 /* ═══════════════════════════════════════════════════
-   PRODUCT DETAIL MODAL — clean, mobile-first
+   PRODUCT DETAIL MODAL — New Order Flow
    ═══════════════════════════════════════════════════ */
 function ProductDetailModal({ product, onClose }) {
-  const [selectedSize, setSelectedSize] = useState('L');
+  const { storePricing, siteTexts, addStoreOrder } = useAdmin();
+  const [step, setStep] = useState('governorate'); // governorate → confirming → size → info → success
+  const [governorate, setGovernorate] = useState(null);
+  const [selectedSize, setSelectedSize] = useState(null);
+  const [customerName, setCustomerName] = useState('');
+  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState('');
+  const [orderDone, setOrderDone] = useState(false);
+
+  const whatsapp = siteTexts?.whatsappNumber || WHATSAPP_DEFAULT;
+  const sizes = storePricing?.sizes || ['M', 'L', 'XL', '2XL'];
+  
+  const getPrices = () => {
+    if (governorate === 'kafr') return storePricing?.kafrElSheikh || { M: 370, L: 380, XL: 390, '2XL': 395 };
+    return storePricing?.other || { M: 410, L: 420, XL: 430, '2XL': 440 };
+  };
+
+  const currentPrice = selectedSize ? getPrices()[selectedSize] : null;
+
+  const handleGovernorateSelect = (gov) => {
+    setGovernorate(gov);
+    setStep('confirming');
+    setTimeout(() => {
+      setStep('size');
+    }, 1200);
+  };
+
+  const handleSubmitOrder = () => {
+    if (!customerName.trim() || !address.trim() || !phone.trim()) return;
+    
+    const orderData = {
+      productName: product.name,
+      productImg: product.img,
+      governorate: governorate === 'kafr' ? 'كفر الشيخ' : 'محافظة أخرى',
+      size: selectedSize,
+      price: currentPrice,
+      customerName: customerName.trim(),
+      address: address.trim(),
+      phone: phone.trim(),
+    };
+    
+    addStoreOrder(orderData);
+    setOrderDone(true);
+    setStep('success');
+  };
 
   if (!product) return null;
-
-  const waText = encodeURIComponent(
-    `أهلاً VIP 👋\n` +
-    `حابب أطلب الموديل ده:\n\n` +
-    `📦 المنتج: ${product.name}\n` +
-    `📏 المقاس: ${selectedSize}\n` +
-    `💰 السعر: ${product.price || 500} EGP\n\n` +
-    `📸 صورة المنتج: ${window.location.origin}${product.img}`
-  );
-  const waLink = `https://wa.me/${WHATSAPP}?text=${waText}`;
 
   return (
     <div
@@ -44,7 +74,7 @@ function ProductDetailModal({ product, onClose }) {
           borderRadius: '20px',
           border: '1px solid rgba(191,64,191,0.2)',
           boxShadow: '0 0 60px rgba(191,64,191,0.1)',
-          animation: 'modalIn 0.25s ease-out',
+          animation: 'modalIn 0.15s ease-out',
         }}
       >
         {/* Close button */}
@@ -56,8 +86,8 @@ function ProductDetailModal({ product, onClose }) {
           ✕
         </button>
 
-        {/* Product image */}
-        <div className="relative w-full" style={{ aspectRatio: '1 / 1', background: 'linear-gradient(135deg, #0c0c12, #1a0b2e)' }}>
+        {/* Product image — slightly smaller for mobile space */}
+        <div className="relative w-full" style={{ aspectRatio: '1 / 1', maxHeight: '320px', background: 'linear-gradient(135deg, #0c0c12, #1a0b2e)' }}>
           <img
             src={product.img}
             alt={product.name}
@@ -67,97 +97,386 @@ function ProductDetailModal({ product, onClose }) {
           />
         </div>
 
-        {/* Product info — clean aligned layout */}
-        <div style={{ padding: '20px 20px 24px' }}>
+        {/* Product info */}
+        <div style={{ padding: '16px 18px 22px' }}>
           {/* Name */}
           <h2 style={{
-            textAlign: 'center', fontSize: '18px', fontWeight: '800',
-            letterSpacing: '0.5px', color: '#f2f2f7', margin: '0 0 6px',
+            textAlign: 'center', fontSize: '17px', fontWeight: '800',
+            letterSpacing: '0.5px', color: '#f2f2f7', margin: '0 0 14px',
             fontFamily: "'Inter', sans-serif",
           }}>
             {product.name}
           </h2>
 
-          {/* Price */}
-          <p style={{
-            textAlign: 'center', fontSize: '20px', fontWeight: '800',
-            color: '#bf40bf', margin: '0 0 18px',
-            fontFamily: "'Inter', sans-serif",
-          }}>
-            {product.price || 500} EGP
-          </p>
-
-          {/* Divider */}
           <div style={{ height: 1, background: 'rgba(191,64,191,0.12)', margin: '0 0 16px' }} />
 
-          {/* Size selector */}
-          <div style={{ marginBottom: '16px' }}>
-            <p style={{
-              textAlign: 'center', fontSize: '10px', letterSpacing: '0.25em',
-              textTransform: 'uppercase', color: '#888', fontWeight: '600',
-              margin: '0 0 10px',
+          {/* ─── STEP 1: Governorate Selection ─── */}
+          {step === 'governorate' && (
+            <div style={{ animation: 'fadeInUp 0.3s ease-out' }}>
+              <p style={{
+                textAlign: 'center', fontSize: '14px', fontWeight: '700',
+                color: '#f2f2f7', margin: '0 0 16px', lineHeight: 1.6,
+                direction: 'rtl',
+              }}>
+                {siteTexts?.governorateQuestion || 'هل أنت من محافظة كفر الشيخ؟'}
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {/* Kafr El-Sheikh */}
+                <button
+                  onClick={() => handleGovernorateSelect('kafr')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '14px 16px', borderRadius: '14px',
+                    background: 'rgba(191,64,191,0.06)',
+                    border: '1.5px solid rgba(191,64,191,0.2)',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                    direction: 'rtl', width: '100%',
+                  }}
+                >
+                  <div style={{
+                    width: '22px', height: '22px', borderRadius: '6px',
+                    border: '2px solid rgba(191,64,191,0.4)',
+                    background: 'rgba(255,255,255,0.03)',
+                    flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }} />
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#f2f2f7' }}>
+                    {siteTexts?.kafrLabel || 'محافظة كفر الشيخ'}
+                  </span>
+                </button>
+
+                {/* Other */}
+                <button
+                  onClick={() => handleGovernorateSelect('other')}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '12px',
+                    padding: '14px 16px', borderRadius: '14px',
+                    background: 'rgba(123,47,255,0.06)',
+                    border: '1.5px solid rgba(123,47,255,0.2)',
+                    cursor: 'pointer', transition: 'all 0.2s',
+                    direction: 'rtl', width: '100%',
+                  }}
+                >
+                  <div style={{
+                    width: '22px', height: '22px', borderRadius: '6px',
+                    border: '2px solid rgba(123,47,255,0.4)',
+                    background: 'rgba(255,255,255,0.03)',
+                    flexShrink: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }} />
+                  <span style={{ fontSize: '14px', fontWeight: '600', color: '#f2f2f7' }}>
+                    {siteTexts?.otherLabel || 'محافظة أخرى'}
+                  </span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* ─── STEP: Confirming ─── */}
+          {step === 'confirming' && (
+            <div style={{
+              textAlign: 'center', padding: '20px 0',
+              animation: 'fadeInUp 0.3s ease-out',
             }}>
-              📏 المقاس / SIZE
-            </p>
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '10px' }}>
-              {SIZES.map((size) => {
-                const sel = selectedSize === size;
-                return (
+              <div style={{
+                width: '56px', height: '56px', borderRadius: '50%',
+                background: 'rgba(0,255,102,0.12)',
+                border: '2px solid rgba(0,255,102,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 12px', animation: 'checkPop 0.4s ease-out',
+              }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#00ff66" strokeWidth="3" strokeLinecap="round" style={{ width: '28px', height: '28px' }}>
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+              <p style={{ fontSize: '16px', fontWeight: '700', color: '#00ff66', margin: '0 0 4px' }}>
+                تم التأكيد ✓
+              </p>
+              <p style={{ fontSize: '12px', color: '#888', margin: 0 }}>
+                {governorate === 'kafr' ? (siteTexts?.kafrLabel || 'محافظة كفر الشيخ') : (siteTexts?.otherLabel || 'محافظة أخرى')}
+              </p>
+            </div>
+          )}
+
+          {/* ─── STEP 2: Size Selection ─── */}
+          {step === 'size' && (
+            <div style={{ animation: 'fadeInUp 0.3s ease-out' }}>
+              <p style={{
+                textAlign: 'center', fontSize: '11px', letterSpacing: '0.2em',
+                textTransform: 'uppercase', color: '#888', fontWeight: '600',
+                margin: '0 0 12px',
+              }}>
+                📏 اختار المقاس / SELECT SIZE
+              </p>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+                {sizes.map((size) => {
+                  const price = getPrices()[size];
+                  const sel = selectedSize === size;
+                  return (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '12px 16px', borderRadius: '12px',
+                        border: sel ? '2px solid #bf40bf' : '1.5px solid rgba(255,255,255,0.08)',
+                        background: sel ? 'rgba(191,64,191,0.12)' : 'rgba(255,255,255,0.02)',
+                        cursor: 'pointer', transition: 'all 0.2s', width: '100%',
+                        boxShadow: sel ? '0 0 14px rgba(191,64,191,0.15)' : 'none',
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{
+                          width: '18px', height: '18px', borderRadius: '50%',
+                          border: sel ? '2px solid #bf40bf' : '2px solid rgba(255,255,255,0.2)',
+                          background: sel ? '#bf40bf' : 'transparent',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          transition: 'all 0.2s',
+                        }}>
+                          {sel && (
+                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#fff' }} />
+                          )}
+                        </div>
+                        <span style={{
+                          fontSize: '15px', fontWeight: '700',
+                          color: sel ? '#fff' : 'rgba(255,255,255,0.6)',
+                          fontFamily: "'Inter', sans-serif",
+                        }}>
+                          {size}
+                        </span>
+                      </div>
+                      <span style={{
+                        fontSize: '15px', fontWeight: '800',
+                        color: sel ? '#bf40bf' : 'rgba(255,255,255,0.4)',
+                        fontFamily: "'Inter', sans-serif",
+                      }}>
+                        {price} EGP
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Address & Phone — show when size is selected */}
+              {selectedSize && (
+                <div style={{ animation: 'fadeInUp 0.3s ease-out' }}>
+                  <div style={{ height: 1, background: 'rgba(191,64,191,0.1)', margin: '0 0 14px' }} />
+                  
+                  <p style={{
+                    textAlign: 'center', fontSize: '11px', letterSpacing: '0.15em',
+                    textTransform: 'uppercase', color: '#888', fontWeight: '600',
+                    margin: '0 0 10px',
+                  }}>
+                    📋 بيانات التوصيل
+                  </p>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '16px' }}>
+                    <input
+                      type="text"
+                      placeholder="الاسم بالكامل..."
+                      value={customerName}
+                      onChange={(e) => setCustomerName(e.target.value)}
+                      style={{
+                        width: '100%', padding: '12px 14px', borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1.5px solid rgba(191,64,191,0.15)',
+                        color: '#f2f2f7', fontSize: '13px',
+                        outline: 'none', direction: 'rtl',
+                        fontFamily: "'Inter', sans-serif",
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                    <input
+                      type="text"
+                      placeholder="العنوان بالتفصيل..."
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      style={{
+                        width: '100%', padding: '12px 14px', borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1.5px solid rgba(191,64,191,0.15)',
+                        color: '#f2f2f7', fontSize: '13px',
+                        outline: 'none', direction: 'rtl',
+                        fontFamily: "'Inter', sans-serif",
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                    <input
+                      type="tel"
+                      placeholder="رقم الموبايل..."
+                      value={phone}
+                      onChange={(e) => setPhone(e.target.value)}
+                      style={{
+                        width: '100%', padding: '12px 14px', borderRadius: '12px',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1.5px solid rgba(191,64,191,0.15)',
+                        color: '#f2f2f7', fontSize: '13px',
+                        outline: 'none', direction: 'ltr',
+                        fontFamily: "'Inter', sans-serif",
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+
+                  {/* Price Summary */}
+                  <div style={{
+                    padding: '12px 14px', borderRadius: '12px',
+                    background: 'rgba(191,64,191,0.06)',
+                    border: '1px solid rgba(191,64,191,0.15)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    marginBottom: '14px',
+                  }}>
+                    <span style={{ fontSize: '12px', color: '#aaa', direction: 'rtl' }}>
+                      المقاس: {selectedSize} · {governorate === 'kafr' ? 'كفر الشيخ' : 'محافظة أخرى'}
+                    </span>
+                    <span style={{ fontSize: '18px', fontWeight: '900', color: '#bf40bf', fontFamily: "'Inter', sans-serif" }}>
+                      {currentPrice} <span style={{ fontSize: '11px', fontWeight: '600' }}>EGP</span>
+                    </span>
+                  </div>
+
+                  {/* Submit Order */}
                   <button
-                    key={size}
-                    onClick={() => setSelectedSize(size)}
+                    onClick={handleSubmitOrder}
+                    disabled={!customerName.trim() || !address.trim() || !phone.trim()}
                     style={{
-                      width: '48px', height: '48px', borderRadius: '12px',
-                      border: sel ? '2px solid #bf40bf' : '1.5px solid rgba(255,255,255,0.12)',
-                      background: sel ? 'rgba(191,64,191,0.15)' : 'rgba(255,255,255,0.03)',
-                      color: sel ? '#fff' : 'rgba(255,255,255,0.5)',
-                      fontSize: '13px', fontWeight: '700', cursor: 'pointer',
-                      transition: 'all 0.2s', display: 'flex',
-                      alignItems: 'center', justifyContent: 'center',
-                      boxShadow: sel ? '0 0 12px rgba(191,64,191,0.2)' : 'none',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      gap: '8px', width: '100%', padding: '14px 0',
+                      borderRadius: '14px',
+                      background: (customerName.trim() && address.trim() && phone.trim())
+                        ? 'linear-gradient(135deg, #bf40bf, #7b2fff)'
+                        : 'rgba(255,255,255,0.06)',
+                      color: (customerName.trim() && address.trim() && phone.trim()) ? '#fff' : '#666',
+                      fontSize: '15px', fontWeight: '700', border: 'none',
+                      cursor: (customerName.trim() && address.trim() && phone.trim()) ? 'pointer' : 'not-allowed',
+                      boxShadow: (customerName.trim() && address.trim() && phone.trim()) ? '0 4px 20px rgba(191,64,191,0.25)' : 'none',
+                      transition: 'all 0.3s',
                       fontFamily: "'Inter', sans-serif",
                     }}
                   >
-                    {size}
+                    🛒 إتمام الطلب
                   </button>
-                );
-              })}
+                </div>
+              )}
             </div>
-          </div>
+          )}
 
-          {/* WhatsApp Order button */}
-          <a
-            href={waLink}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => {
-              try {
-                const orders = JSON.parse(localStorage.getItem('vip_wa_orders') || '[]');
-                orders.push({ product: product.name, size: selectedSize, price: product.price || 500, date: new Date().toISOString() });
-                localStorage.setItem('vip_wa_orders', JSON.stringify(orders));
-              } catch {}
-            }}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              gap: '10px', width: '100%', padding: '14px 0',
-              borderRadius: '14px', background: '#25D366',
-              color: '#ffffff', fontSize: '14px', fontWeight: '700',
-              letterSpacing: '0.5px', textDecoration: 'none',
-              boxShadow: '0 4px 16px rgba(37,211,102,0.25)',
-            }}
-          >
-            <svg viewBox="0 0 24 24" fill="white" style={{ width: '20px', height: '20px' }}>
-              <path d={WA_ICON} />
-            </svg>
-            اطلب الآن / ORDER NOW
-          </a>
+          {/* ─── STEP: Success ─── */}
+          {step === 'success' && (
+            <div style={{
+              textAlign: 'center', padding: '10px 0',
+              animation: 'fadeInUp 0.3s ease-out',
+            }}>
+              <div style={{
+                width: '64px', height: '64px', borderRadius: '50%',
+                background: 'linear-gradient(135deg, rgba(0,255,102,0.15), rgba(37,211,102,0.1))',
+                border: '2px solid rgba(0,255,102,0.4)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                margin: '0 auto 14px', animation: 'checkPop 0.5s ease-out',
+              }}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="#00ff66" strokeWidth="3" strokeLinecap="round" style={{ width: '32px', height: '32px' }}>
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
 
-          <p style={{
-            fontSize: '10px', color: 'rgba(153,153,159,0.4)',
-            textAlign: 'center', margin: '8px 0 0',
-          }}>
-            سيتم فتح واتساب · مقاس {selectedSize}
-          </p>
+              <h3 style={{
+                fontSize: '18px', fontWeight: '900', color: '#00ff66',
+                margin: '0 0 14px', direction: 'rtl',
+              }}>
+                {siteTexts?.orderSuccess || 'تم الطلب بنجاح! 🎉'}
+              </h3>
+
+              {/* WhatsApp notification banner */}
+              <div style={{
+                padding: '12px 16px', borderRadius: '12px',
+                background: 'rgba(37,211,102,0.08)',
+                border: '1px solid rgba(37,211,102,0.2)',
+                marginBottom: '16px', direction: 'rtl',
+              }}>
+                <p style={{ fontSize: '13px', fontWeight: 700, color: '#25D366', margin: '0 0 4px' }}>
+                  💬 سوف يتم التواصل معاك عبر الواتساب
+                </p>
+                <p style={{ fontSize: '11px', color: '#888', margin: 0 }}>
+                  فريق VIP هيتواصل معاك قريباً لتأكيد التوصيل وتفاصيل الطلب ✨
+                </p>
+              </div>
+
+              {/* Order summary with design image */}
+              <div style={{
+                padding: '12px', borderRadius: '12px',
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.06)',
+                marginBottom: '16px', direction: 'rtl',
+                fontSize: '12px', color: '#aaa', textAlign: 'right',
+              }}>
+                {/* Design image */}
+                {product.img && (
+                  <div style={{
+                    borderRadius: '10px', overflow: 'hidden',
+                    marginBottom: '10px', maxHeight: '120px',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    background: 'rgba(255,255,255,0.02)',
+                  }}>
+                    <img src={product.img} alt={product.name} style={{ maxWidth: '100%', maxHeight: '120px', objectFit: 'contain' }} />
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>👤 الاسم</span><span style={{ color: '#f2f2f7' }}>{customerName}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>👕 المنتج</span><span style={{ color: '#f2f2f7' }}>{product.name}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>📏 المقاس</span><span style={{ color: '#f2f2f7' }}>{selectedSize}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>📍 المحافظة</span><span style={{ color: '#f2f2f7' }}>{governorate === 'kafr' ? 'كفر الشيخ' : 'محافظة أخرى'}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>📱 الرقم</span><span style={{ color: '#f2f2f7', direction: 'ltr' }}>{phone}</span>
+                </div>
+                <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 0' }} />
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span style={{ fontWeight: '700' }}>💰 الإجمالي</span>
+                  <span style={{ fontWeight: '800', color: '#bf40bf', fontSize: '14px' }}>{currentPrice} EGP</span>
+                </div>
+              </div>
+
+              {/* WhatsApp inquiry */}
+              <a
+                href={`https://api.whatsapp.com/send?phone=${whatsapp}&text=${encodeURIComponent(`مرحباً VIP! أنا ${customerName}، عندي استفسار عن طلبي 📦\nالمنتج: ${product.name}\nالمقاس: ${selectedSize}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  gap: '10px', width: '100%', padding: '13px 0',
+                  borderRadius: '14px', background: '#25D366',
+                  color: '#ffffff', fontSize: '13px', fontWeight: '700',
+                  textDecoration: 'none',
+                  boxShadow: '0 4px 16px rgba(37,211,102,0.25)',
+                }}
+              >
+                <svg viewBox="0 0 24 24" fill="white" style={{ width: '18px', height: '18px' }}>
+                  <path d={WA_ICON} />
+                </svg>
+                الاستفسار عبر الواتساب
+              </a>
+
+              <button
+                onClick={onClose}
+                style={{
+                  marginTop: '10px', padding: '10px 0', width: '100%',
+                  borderRadius: '12px', background: 'none',
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  color: '#888', fontSize: '12px', cursor: 'pointer',
+                  fontFamily: "'Inter', sans-serif",
+                }}
+              >
+                إغلاق ✕
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -165,9 +484,9 @@ function ProductDetailModal({ product, onClose }) {
 }
 
 /* ═══════════════════════════════════════════════════
-   LIGHTWEIGHT PRODUCT CARD — no framer-motion per card
+   LIGHTWEIGHT PRODUCT CARD — "إضغط للشراء" button
    ═══════════════════════════════════════════════════ */
-function LightCard({ product, onOpenDetail }) {
+function LightCard({ product, onOpenDetail, buyButtonText }) {
   const [imgError, setImgError] = useState(false);
 
   return (
@@ -190,26 +509,34 @@ function LightCard({ product, onOpenDetail }) {
           <div className="w-full h-full flex flex-col items-center justify-center">
             <span className="font-heading text-2xl font-black" style={{ color: '#d966d9' }}>VIP</span>
             <span className="text-xs mt-1" style={{ color: '#99999f' }}>{product.name}</span>
-            <span className="text-sm font-bold mt-1" style={{ color: '#bc13fe' }}>{product.price || 500} EGP</span>
           </div>
         )}
       </div>
 
       {/* Info */}
       <div style={{ padding: '10px 8px', textAlign: 'center' }}>
-        <p style={{ fontSize: '14px', fontWeight: '500', color: 'rgba(242,242,247,0.9)', margin: '0 0 5px 0', fontFamily: 'Montserrat, Inter, sans-serif' }}>
+        <p style={{ fontSize: '14px', fontWeight: '500', color: 'rgba(242,242,247,0.9)', margin: '0 0 8px 0', fontFamily: 'Montserrat, Inter, sans-serif' }}>
           {product.name}
         </p>
-        <p style={{ fontSize: '13px', fontWeight: '700', color: '#bc13fe', margin: 0, fontFamily: 'Montserrat, Inter, sans-serif' }}>
-          {product.price || 500} EGP
-        </p>
+        {/* Buy button instead of price */}
+        <div style={{
+          padding: '8px 12px', borderRadius: '10px',
+          background: 'linear-gradient(135deg, rgba(191,64,191,0.15), rgba(123,47,255,0.1))',
+          border: '1px solid rgba(191,64,191,0.3)',
+          color: '#d966d9', fontSize: '12px', fontWeight: '700',
+          transition: 'all 0.3s',
+          fontFamily: "'Inter', sans-serif",
+          direction: 'rtl',
+        }}>
+          {buyButtonText || 'إضغط للشراء 🛒'}
+        </div>
       </div>
     </div>
   );
 }
 
 /* ═══════════════════════════════════════════════════
-   SECTION BANNERS — CSS only, no framer-motion
+   SECTION BANNERS — CSS only
    ═══════════════════════════════════════════════════ */
 function SectionBanner({ id, titleEn, titleAr, subtitle }) {
   return (
@@ -250,23 +577,11 @@ function SectionBanner({ id, titleEn, titleAr, subtitle }) {
    MAIN STORE SECTION
    ═══════════════════════════════════════════════════ */
 export default function ProductStore() {
-  const { products } = useAdmin();
+  const { products, siteTexts } = useAdmin();
   const [detailProduct, setDetailProduct] = useState(null);
 
   const productsBoys = useMemo(() => products.filter(p => p.gender === 'boys' && p.inStock !== false), [products]);
   const productsGirls = useMemo(() => products.filter(p => p.gender === 'girls' && p.inStock !== false), [products]);
-
-  /* Compute display price dynamically from actual product data */
-  const displayPrice = useMemo(() => {
-    if (!products || products.length === 0) return 500;
-    // Find the most common price
-    const freq = {};
-    products.forEach(p => { freq[p.price] = (freq[p.price] || 0) + 1; });
-    const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
-    return Number(sorted[0][0]);
-  }, [products]);
-
-  const displayPriceAr = useMemo(() => toAr(displayPrice), [displayPrice]);
 
   const handleOpenDetail = useCallback((product) => {
     setDetailProduct(product);
@@ -279,18 +594,18 @@ export default function ProductStore() {
   return (
     <section id="store" className="relative py-12 sm:py-16 md:py-24 px-4 sm:px-5 md:px-6 overflow-x-hidden">
       <div className="max-w-7xl mx-auto overflow-x-hidden">
-        {/* Section header — CSS only */}
+        {/* Section header */}
         <div className="relative z-10 text-center mb-10 sm:mb-12 md:mb-14">
           <p className="text-[10px] md:text-xs tracking-[0.4em] uppercase font-medium mb-1" style={{ color: '#bf40bf' }}>
             ★ VIP Holopreview Collection / مجموعة VIP الحصرية ★
           </p>
 
           <h2 className="font-heading text-xl sm:text-2xl md:text-5xl font-bold tracking-wider text-white-95 mt-2">
-            All Products
+            {siteTexts?.storeTitle || 'All Products'}
           </h2>
 
           <p className="text-sm md:text-lg ar mt-1" style={{ color: '#99999f' }}>
-            جميع المنتجات
+            {siteTexts?.storeTitleAr || 'جميع المنتجات'}
           </p>
 
           <div
@@ -299,12 +614,8 @@ export default function ProductStore() {
           />
 
           <p className="text-xs sm:text-sm mt-3 sm:mt-4" style={{ color: '#99999f' }}>
-            All items —{' '}
-            <span className="font-heading font-bold" style={{ color: '#bf40bf' }}>{displayPrice} EGP</span>{' '}
-            <span className="ar">| {displayPriceAr} جنية</span>
-            <br />
-            <span className="text-[10px] sm:text-[11px] mt-1 inline-block" style={{ color: '#99999f' }}>
-              Tap any product to view details · Select size · Order via WhatsApp
+            <span className="text-[10px] sm:text-[11px] inline-block" style={{ color: '#99999f' }}>
+              اضغط على أي منتج لبدء الطلب · Tap any product to order
             </span>
           </p>
         </div>
@@ -314,34 +625,36 @@ export default function ProductStore() {
           {/* Boys Section Banner */}
           <SectionBanner
             id="boys-section"
-            titleEn="BOYS COLLECTION"
-            titleAr="قسم الولاد"
+            titleEn={siteTexts?.boysSectionEn || 'BOYS COLLECTION'}
+            titleAr={siteTexts?.boysSectionAr || 'قسم الولاد'}
             subtitle="★ Section 1 ★"
           />
 
-          {/* Boys products (1-50) */}
+          {/* Boys products */}
           {productsBoys.map((product) => (
             <LightCard
               key={product.id}
               product={product}
               onOpenDetail={handleOpenDetail}
+              buyButtonText={siteTexts?.buyButton}
             />
           ))}
 
           {/* Girls Section Banner */}
           <SectionBanner
             id="girls-section"
-            titleEn="GIRLS COLLECTION"
-            titleAr="قسم البنات"
+            titleEn={siteTexts?.girlsSectionEn || 'GIRLS COLLECTION'}
+            titleAr={siteTexts?.girlsSectionAr || 'قسم البنات'}
             subtitle="★ Section 2 ★"
           />
 
-          {/* Girls products (51-100) */}
+          {/* Girls products */}
           {productsGirls.map((product) => (
             <LightCard
               key={product.id}
               product={product}
               onOpenDetail={handleOpenDetail}
+              buyButtonText={siteTexts?.buyButton}
             />
           ))}
         </div>
@@ -360,7 +673,17 @@ export default function ProductStore() {
           from { opacity: 0; transform: scale(0.95) translateY(10px); }
           to { opacity: 1; transform: scale(1) translateY(0); }
         }
-      `}</style>
+        @keyframes fadeInUp {
+          from { opacity: 0; transform: translateY(12px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes checkPop {
+          0% { transform: scale(0); opacity: 0; }
+          60% { transform: scale(1.15); }
+          100% { transform: scale(1); opacity: 1; }
+        }
+      `}
+      </style>
     </section>
   );
 }
