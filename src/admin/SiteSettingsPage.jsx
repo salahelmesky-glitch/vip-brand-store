@@ -22,6 +22,15 @@ export default function SiteSettingsPage() {
 
   const showSaved = (msg) => { setSaved(msg); setTimeout(() => setSaved(''), 2000); };
 
+  /* ══ CRITICAL: Sync local state when context updates from API ══ 
+     Without this, the local form values would revert to old values
+     after polling fetches new data from MongoDB */
+  useEffect(() => { setLocalPricing(storePricing || {}); }, [storePricing]);
+  useEffect(() => { setLocalTexts(siteTexts || {}); }, [siteTexts]);
+  useEffect(() => { setLocalCosts(rewardCosts || {}); }, [rewardCosts]);
+  useEffect(() => { setLocalPrizes(prizes || []); }, [prizes]);
+  useEffect(() => { setLocalMysteryText(mysteryText || ''); }, [mysteryText]);
+
   const updatePrize = (idx, field, value) => {
     const copy = [...localPrizes];
     copy[idx] = { ...copy[idx], [field]: value };
