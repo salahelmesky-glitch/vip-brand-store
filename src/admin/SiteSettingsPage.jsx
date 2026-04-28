@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAdmin } from '../context/AdminContext';
 
 export default function SiteSettingsPage() {
@@ -19,24 +19,57 @@ export default function SiteSettingsPage() {
   const [localMysteryText, setLocalMysteryText] = useState(mysteryText || '');
 
   const [saved, setSaved] = useState('');
+  const [saving, setSaving] = useState(false);
 
-  const showSaved = (msg) => { setSaved(msg); setTimeout(() => setSaved(''), 2000); };
+  /* Track if user is currently editing (typing) — blocks polling overwrite */
+  const isEditingRef = useRef(false);
+  const editTimeoutRef = useRef(null);
 
-  /* ══ CRITICAL: Only initialize local state once to prevent polling from overwriting user typing ══ */
-  useEffect(() => { if (Object.keys(localPricing).length === 0 && storePricing) setLocalPricing(storePricing); }, [storePricing]);
-  useEffect(() => { if (Object.keys(localTexts).length === 0 && siteTexts) setLocalTexts(siteTexts); }, [siteTexts]);
-  useEffect(() => { if (Object.keys(localCosts).length === 0 && rewardCosts) setLocalCosts(rewardCosts); }, [rewardCosts]);
-  useEffect(() => { if (localPrizes.length === 0 && prizes && prizes.length > 0) setLocalPrizes(prizes); }, [prizes]);
-  useEffect(() => { if (!localMysteryText && mysteryText) setLocalMysteryText(mysteryText); }, [mysteryText]);
+  const markEditing = () => {
+    isEditingRef.current = true;
+    clearTimeout(editTimeoutRef.current);
+    editTimeoutRef.current = setTimeout(() => {
+      isEditingRef.current = false;
+    }, 10000); // After 10s of no typing, allow sync again
+  };
+
+  const showSaved = (msg) => { setSaved(msg); setTimeout(() => setSaved(''), 3000); };
+
+  /* ══ Sync local state from context — ONLY when user is NOT editing ══ */
+  useEffect(() => { if (!isEditingRef.current) setLocalPricing(storePricing || {}); }, [storePricing]);
+  useEffect(() => { if (!isEditingRef.current) setLocalTexts(siteTexts || {}); }, [siteTexts]);
+  useEffect(() => { if (!isEditingRef.current) setLocalCosts(rewardCosts || {}); }, [rewardCosts]);
+  useEffect(() => { if (!isEditingRef.current) setLocalPrizes(prizes || []); }, [prizes]);
+  useEffect(() => { if (!isEditingRef.current) setLocalMysteryText(mysteryText || ''); }, [mysteryText]);
 
   const updatePrize = (idx, field, value) => {
+    markEditing();
     const copy = [...localPrizes];
     copy[idx] = { ...copy[idx], [field]: value };
     setLocalPrizes(copy);
   };
 
   const updateText = (key, value) => {
+    markEditing();
     setLocalTexts(prev => ({ ...prev, [key]: value }));
+  };
+
+  /* Save helper with loading state */
+  const doSave = async (fn, successMsg) => {
+    setSaving(true);
+    isEditingRef.current = false; // done editing
+    try {
+      const result = await fn();
+      if (result?.success) {
+        showSaved(successMsg);
+      } else {
+        showSaved('❌ حدث خطأ — حاول تاني');
+      }
+    } catch {
+      showSaved('❌ حدث خطأ — حاول تاني');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -44,7 +77,7 @@ export default function SiteSettingsPage() {
       <h2 style={{ fontSize: 18, fontWeight: 700, color: '#f2f2f7', margin: '0 0 20px' }}>⚙️ إعدادات الموقع</h2>
 
       {saved && (
-        <div style={{ padding: '10px 16px', borderRadius: 12, marginBottom: 14, background: 'rgba(0,255,102,0.08)', border: '1px solid rgba(0,255,102,0.2)', fontSize: 13, color: '#00ff66', fontWeight: 600, textAlign: 'center' }}>{saved}</div>
+        <div style={{ padding: '10px 16px', borderRadius: 12, marginBottom: 14, background: saved.includes('❌') ? 'rgba(239,68,68,0.08)' : 'rgba(0,255,102,0.08)', border: `1px solid ${saved.includes('❌') ? 'rgba(239,68,68,0.2)' : 'rgba(0,255,102,0.2)'}`, fontSize: 13, color: saved.includes('❌') ? '#f87171' : '#00ff66', fontWeight: 600, textAlign: 'center' }}>{saved}</div>
       )}
 
       {/* ═══ MAINTENANCE MODE ═══ */}
@@ -75,7 +108,7 @@ export default function SiteSettingsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 12, color: '#aaa', fontWeight: 700 }}>النقاط</span>
               <input type="number" min="1" value={localCosts?.spinCost || 75}
-                onChange={(e) => setLocalCosts(prev => ({ ...prev, spinCost: Number(e.target.value) }))}
+                onChange={(e) => { markEditing(); setLocalCosts(prev => ({ ...prev, spinCost: Number(e.target.value) })); }}
                 style={{ ...inp, width: '100%' }} />
             </div>
           </div>
@@ -84,17 +117,17 @@ export default function SiteSettingsPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ fontSize: 12, color: '#aaa', fontWeight: 700 }}>النقاط</span>
               <input type="number" min="1" value={localCosts?.mysteryCost || 100}
-                onChange={(e) => setLocalCosts(prev => ({ ...prev, mysteryCost: Number(e.target.value) }))}
+                onChange={(e) => { markEditing(); setLocalCosts(prev => ({ ...prev, mysteryCost: Number(e.target.value) })); }}
                 style={{ ...inp, width: '100%' }} />
             </div>
           </div>
         </div>
 
-        <button onClick={async () => {
-          await updateRewardCosts(localCosts);
-          showSaved('✅ تم حفظ تكلفة المكافآت — التغيير بان عند الكل فوراً');
-        }} style={{ ...saveBtn, width: '100%', padding: '12px', marginTop: 12 }}>
-          💾 حفظ تكلفة المكافآت
+        <button disabled={saving} onClick={() => doSave(
+          () => updateRewardCosts(localCosts),
+          '✅ تم حفظ تكلفة المكافآت — التغيير بان عند الكل فوراً'
+        )} style={{ ...saveBtn, width: '100%', padding: '12px', marginTop: 12, opacity: saving ? 0.6 : 1 }}>
+          {saving ? '⏳ جاري الحفظ...' : '💾 حفظ تكلفة المكافآت'}
         </button>
       </div>
 
@@ -110,10 +143,10 @@ export default function SiteSettingsPage() {
               <div key={size} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <span style={{ fontSize: 12, color: '#aaa', width: 30, fontWeight: 700 }}>{size}</span>
                 <input type="number" value={localPricing?.kafrElSheikh?.[size] || ''}
-                  onChange={(e) => setLocalPricing(prev => ({
+                  onChange={(e) => { markEditing(); setLocalPricing(prev => ({
                     ...prev,
                     kafrElSheikh: { ...prev.kafrElSheikh, [size]: Number(e.target.value) }
-                  }))} style={{ ...inp, width: '100%' }} />
+                  })); }} style={{ ...inp, width: '100%' }} />
                 <span style={{ fontSize: 10, color: '#666' }}>ج.م</span>
               </div>
             ))}
@@ -124,21 +157,21 @@ export default function SiteSettingsPage() {
               <div key={size} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
                 <span style={{ fontSize: 12, color: '#aaa', width: 30, fontWeight: 700 }}>{size}</span>
                 <input type="number" value={localPricing?.other?.[size] || ''}
-                  onChange={(e) => setLocalPricing(prev => ({
+                  onChange={(e) => { markEditing(); setLocalPricing(prev => ({
                     ...prev,
                     other: { ...prev.other, [size]: Number(e.target.value) }
-                  }))} style={{ ...inp, width: '100%' }} />
+                  })); }} style={{ ...inp, width: '100%' }} />
                 <span style={{ fontSize: 10, color: '#666' }}>ج.م</span>
               </div>
             ))}
           </div>
         </div>
 
-        <button onClick={async () => {
-          await updateStorePricing(localPricing);
-          showSaved('✅ تم حفظ الأسعار — التغيير بان عند الكل فوراً');
-        }} style={{ ...saveBtn, width: '100%', padding: '12px', marginTop: 12 }}>
-          💾 حفظ الأسعار
+        <button disabled={saving} onClick={() => doSave(
+          () => updateStorePricing(localPricing),
+          '✅ تم حفظ الأسعار — التغيير بان عند الكل فوراً'
+        )} style={{ ...saveBtn, width: '100%', padding: '12px', marginTop: 12, opacity: saving ? 0.6 : 1 }}>
+          {saving ? '⏳ جاري الحفظ...' : '💾 حفظ الأسعار'}
         </button>
       </div>
 
@@ -181,11 +214,11 @@ export default function SiteSettingsPage() {
           ))}
         </div>
 
-        <button onClick={async () => {
-          await updateSiteTexts(localTexts);
-          showSaved('✅ تم حفظ النصوص — التغيير بان عند الكل فوراً');
-        }} style={{ ...saveBtn, width: '100%', padding: '12px', marginTop: 12 }}>
-          💾 حفظ النصوص
+        <button disabled={saving} onClick={() => doSave(
+          () => updateSiteTexts(localTexts),
+          '✅ تم حفظ النصوص — التغيير بان عند الكل فوراً'
+        )} style={{ ...saveBtn, width: '100%', padding: '12px', marginTop: 12, opacity: saving ? 0.6 : 1 }}>
+          {saving ? '⏳ جاري الحفظ...' : '💾 حفظ النصوص'}
         </button>
       </div>
 
@@ -211,11 +244,11 @@ export default function SiteSettingsPage() {
           ))}
         </div>
 
-        <button onClick={async () => {
-          await updateSiteTexts(localTexts);
-          showSaved('✅ تم حفظ الروابط — التغيير بان عند الكل فوراً');
-        }} style={{ ...saveBtn, width: '100%', padding: '12px', marginTop: 12 }}>
-          💾 حفظ الروابط
+        <button disabled={saving} onClick={() => doSave(
+          () => updateSiteTexts(localTexts),
+          '✅ تم حفظ الروابط — التغيير بان عند الكل فوراً'
+        )} style={{ ...saveBtn, width: '100%', padding: '12px', marginTop: 12, opacity: saving ? 0.6 : 1 }}>
+          {saving ? '⏳ جاري الحفظ...' : '💾 حفظ الروابط'}
         </button>
       </div>
 
@@ -224,11 +257,11 @@ export default function SiteSettingsPage() {
         <p style={sectionTitle}>📦 نص صندوق الغموض ({localCosts?.mysteryCost || 100} نقطة)</p>
         <p style={{ fontSize: 10, color: '#666', margin: '0 0 8px' }}>النص اللي بيظهر للعميل لما يكسب الصندوق</p>
         <div style={{ display: 'flex', gap: 8 }}>
-          <input value={localMysteryText} onChange={e => setLocalMysteryText(e.target.value)} style={inp} />
-          <button onClick={async () => {
-            await updateMysteryText(localMysteryText);
-            showSaved('✅ تم حفظ نص الصندوق');
-          }} style={saveBtn}>💾</button>
+          <input value={localMysteryText} onChange={e => { markEditing(); setLocalMysteryText(e.target.value); }} style={inp} />
+          <button disabled={saving} onClick={() => doSave(
+            () => updateMysteryText(localMysteryText),
+            '✅ تم حفظ نص الصندوق'
+          )} style={{ ...saveBtn, opacity: saving ? 0.6 : 1 }}>{saving ? '⏳' : '💾'}</button>
         </div>
       </div>
 
@@ -254,10 +287,12 @@ export default function SiteSettingsPage() {
         </div>
 
         <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-          <button onClick={async () => {
-            await updatePrizes(localPrizes);
-            showSaved('✅ تم حفظ جوائز العجلة — التغيير بان عند الكل فوراً');
-          }} style={{ ...saveBtn, flex: 1, padding: '10px' }}>💾 حفظ الجوائز</button>
+          <button disabled={saving} onClick={() => doSave(
+            () => updatePrizes(localPrizes),
+            '✅ تم حفظ جوائز العجلة — التغيير بان عند الكل فوراً'
+          )} style={{ ...saveBtn, flex: 1, padding: '10px', opacity: saving ? 0.6 : 1 }}>
+            {saving ? '⏳ جاري الحفظ...' : '💾 حفظ الجوائز'}
+          </button>
           <button onClick={async () => {
             const defaults = [
               { id: 'discount_10', labelAr: 'خصم ١٠٪', color: '#ff6b6b', icon: '🏷️' },

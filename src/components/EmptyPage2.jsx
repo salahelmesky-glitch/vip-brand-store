@@ -165,6 +165,16 @@ function VideoSection() {
   /* Videos now come from AdminContext (MongoDB API) — synced for all clients! */
   const { videos } = useAdmin();
 
+  /* Auto-generate thumbnail from video URL */
+  const getThumb = (v) => {
+    if (v.thumbnail) return v.thumbnail;
+    // Try to extract TikTok thumbnail
+    const url = v.url || '';
+    if (url.includes('tiktok.com')) return null;
+    if (url.includes('instagram.com')) return null;
+    return null;
+  };
+
   if (!videos.length) return (
     <div style={cardStyle}><p style={secLabel}>🎬 فيديوهاتنا / OUR VIDEOS</p>
       <p style={{ textAlign: 'center', color: '#555', fontSize: 12, margin: '16px 0' }}>قريباً هنضيف فيديوهات حصرية! 🎥</p></div>
@@ -172,13 +182,61 @@ function VideoSection() {
   return (
     <div style={cardStyle}><p style={secLabel}>🎬 فيديوهاتنا / OUR VIDEOS</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-        {videos.slice(0, 50).map((v, i) => (
-          <a key={i} href={v.url} target="_blank" rel="noopener noreferrer" style={{ display: 'block', borderRadius: 12, overflow: 'hidden', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(191,64,191,0.12)', textDecoration: 'none' }}>
-            <div style={{ width: '100%', aspectRatio: '9/16', background: 'linear-gradient(135deg, #1a0b2e, #0c0c12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              {v.thumbnail ? <img src={v.thumbnail} alt={v.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 32 }}>▶️</span>}
-            </div>
-            <p style={{ fontSize: 11, color: '#ccc', padding: '8px 10px', margin: 0, textAlign: 'center', fontWeight: 600 }}>{v.title || `فيديو #${i + 1}`}</p>
-          </a>))}
+        {videos.slice(0, 50).map((v, i) => {
+          const thumb = getThumb(v);
+          return (
+            <a key={i} href={v.url} target="_blank" rel="noopener noreferrer" style={{
+              display: 'block', borderRadius: 14, overflow: 'hidden',
+              background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(191,64,191,0.12)',
+              textDecoration: 'none', transition: 'all 0.3s',
+            }}>
+              <div style={{
+                width: '100%', aspectRatio: '1/1', position: 'relative',
+                background: 'linear-gradient(135deg, #1a0b2e, #0c0c12)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                overflow: 'hidden',
+              }}>
+                {thumb ? (
+                  <img src={thumb} alt={v.title} style={{
+                    width: '100%', height: '100%', objectFit: 'cover',
+                  }} />
+                ) : (
+                  /* Beautiful play button when no thumbnail */
+                  <div style={{ textAlign: 'center' }}>
+                    <div style={{
+                      width: 56, height: 56, borderRadius: '50%',
+                      background: 'linear-gradient(135deg, rgba(191,64,191,0.3), rgba(123,47,255,0.3))',
+                      border: '2px solid rgba(191,64,191,0.4)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      margin: '0 auto 8px',
+                      boxShadow: '0 0 30px rgba(191,64,191,0.2)',
+                    }}>
+                      <span style={{ fontSize: 24, marginLeft: 4 }}>▶️</span>
+                    </div>
+                    <p style={{ fontSize: 10, color: '#bf40bf', margin: 0, fontWeight: 600 }}>شاهد الآن</p>
+                  </div>
+                )}
+                {/* Gradient overlay at bottom */}
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0, height: 40,
+                  background: 'linear-gradient(transparent, rgba(5,0,16,0.8))',
+                }} />
+                {/* Play icon badge */}
+                <div style={{
+                  position: 'absolute', top: 8, right: 8,
+                  background: 'rgba(0,0,0,0.6)', borderRadius: 6,
+                  padding: '3px 6px', fontSize: 10, color: '#fff',
+                  backdropFilter: 'blur(4px)',
+                }}>▶</div>
+              </div>
+              <p style={{
+                fontSize: 11, color: '#ccc', padding: '8px 10px', margin: 0,
+                textAlign: 'center', fontWeight: 600,
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+              }}>{v.title || `فيديو #${i + 1}`}</p>
+            </a>
+          );
+        })}
       </div></div>
   );
 }
