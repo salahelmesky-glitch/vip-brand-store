@@ -539,7 +539,10 @@ export default function AIStylist(){
     return reply;
   },[style,size,color,apply,boysProducts,girlsProducts,allProducts,getNewProduct]);
 
-  const send=useCallback(()=>{
+  /* ── API-powered AI chat ── */
+  const [isTyping, setIsTyping] = useState(false);
+
+  const send=useCallback(async ()=>{
     const m=input.trim();if(!m)return;
     const ar=isAr(m);
     setMsgs(p=>[...p,{text:m,user:true,rtl:ar}]);
@@ -549,11 +552,63 @@ export default function AIStylist(){
       doSurprise(ar);return;
     }
 
-    setTimeout(()=>{
-      const r=aiReply(m);
-      if(r)setMsgs(p=>[...p,{text:r.text,user:false,rtl:r.rtl,img:r.img,productImg:r.productImg}]);
-    },400+Math.random()*400);
-  },[input,aiReply]);
+    // Show typing indicator
+    setIsTyping(true);
+
+    try {
+      // Build history from recent messages
+      const history = msgs.slice(-10).map(msg => ({
+        text: msg.text,
+        user: msg.user,
+      }));
+
+      const res = await fetch('/api/ai-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: m, history }),
+      });
+      
+      const data = await res.json();
+      let replyText = data.reply || (ar ? 'معلش حصل مشكلة، جرب تاني! 😅' : 'Oops, try again! 😅');
+      let productImg = null;
+      
+      // Handle product display commands from AI
+      if (replyText.includes('[SHOW_PRODUCT]') || replyText.includes('[SHOW_ANOTHER]')) {
+        const pool = lastCategoryRef.current === 'girls' ? girlsProducts : lastCategoryRef.current === 'boys' ? boysProducts : allProducts;
+        if (pool.length > 0) {
+          const p = getNewProduct(pool);
+          lastCategoryRef.current = lastCategoryRef.current || p.gender;
+          productImg = p.img;
+        }
+        replyText = replyText.replace(/\[SHOW_PRODUCT\]/g, '').replace(/\[SHOW_ANOTHER\]/g, '').trim();
+      }
+      if (replyText.includes('[SHOW_BOYS]')) {
+        if (boysProducts.length > 0) {
+          const p = getNewProduct(boysProducts);
+          lastCategoryRef.current = 'boys';
+          productImg = p.img;
+        }
+        replyText = replyText.replace(/\[SHOW_BOYS\]/g, '').trim();
+      }
+      if (replyText.includes('[SHOW_GIRLS]')) {
+        if (girlsProducts.length > 0) {
+          const p = getNewProduct(girlsProducts);
+          lastCategoryRef.current = 'girls';
+          productImg = p.img;
+        }
+        replyText = replyText.replace(/\[SHOW_GIRLS\]/g, '').trim();
+      }
+
+      setMsgs(p=>[...p,{text:replyText,user:false,rtl:ar,productImg}]);
+    } catch (err) {
+      console.warn('[AI] Chat error:', err);
+      // Fallback to local AI
+      const r = aiReply(m);
+      if(r) setMsgs(p=>[...p,{text:r.text,user:false,rtl:r.rtl,img:r.img,productImg:r.productImg}]);
+    } finally {
+      setIsTyping(false);
+    }
+  },[input,aiReply,msgs,boysProducts,girlsProducts,allProducts,getNewProduct]);
 
   const pickStyle=useCallback((id)=>{
     apply(id,COLORS[Math.floor(Math.random()*COLORS.length)].hex);
@@ -648,6 +703,16 @@ export default function AIStylist(){
               {tip&&<div style={{margin:'0 12px 8px',padding:'8px 12px',borderRadius:10,background:'rgba(0,255,102,0.05)',border:'1px solid rgba(0,255,102,0.12)',fontSize:11,color:'#88ffaa',lineHeight:1.5,flexShrink:0,whiteSpace:'pre-line'}}>💡 {tip}</div>}
               <div style={{flex:1,overflowY:'auto',padding:'6px 12px',scrollbarWidth:'thin',scrollbarColor:'rgba(0,255,102,0.2) transparent'}}>
                 {msgs.map((m,i)=>(<Bubble key={i} msg={m.text} isUser={m.user} rtl={m.rtl} img={m.img} productImg={m.productImg}/>))}
+                {isTyping && (
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:10,animation:'fadeSlideUp 0.3s ease-out'}}>
+                    <div style={{width:28,height:28,borderRadius:'50%',flexShrink:0,background:'linear-gradient(135deg,#00ff66,#00cc52)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:14}}>🤖</div>
+                    <div style={{padding:'10px 16px',borderRadius:'16px 16px 16px 4px',background:'rgba(255,255,255,0.05)',border:'1px solid rgba(255,255,255,0.08)',display:'flex',gap:4,alignItems:'center'}}>
+                      <span style={{width:6,height:6,borderRadius:'50%',background:'#00ff66',animation:'typingDot 1.4s infinite',animationDelay:'0s'}}/>
+                      <span style={{width:6,height:6,borderRadius:'50%',background:'#00ff66',animation:'typingDot 1.4s infinite',animationDelay:'0.2s'}}/>
+                      <span style={{width:6,height:6,borderRadius:'50%',background:'#00ff66',animation:'typingDot 1.4s infinite',animationDelay:'0.4s'}}/>
+                    </div>
+                  </div>
+                )}
                 <div ref={endRef}/>
               </div>
               <div style={{display:'flex',gap:8,padding:'10px 12px',borderTop:'1px solid rgba(255,255,255,0.06)',flexShrink:0,background:'rgba(5,0,16,0.95)'}}>
@@ -739,13 +804,14 @@ export default function AIStylist(){
 
       <style>{`
         @keyframes fadeSlideUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+        @keyframes typingDot{0%,60%,100%{opacity:0.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-4px)}}
         .ais-layout{display:grid;grid-template-columns:1fr minmax(340px,420px);height:calc(100vh - 52px)}
         .ais-3d{min-height:400px}
         .ais-panel{max-height:calc(100vh - 52px);border-left:1px solid rgba(255,255,255,0.04)}
         @media(max-width:768px){
-          .ais-layout{grid-template-columns:1fr!important;grid-template-rows:280px 1fr;height:auto;min-height:calc(100vh - 52px)}
-          .ais-3d{min-height:280px!important;max-height:320px}
-          .ais-panel{border-left:none!important;max-height:none;min-height:calc(100vh - 332px);height:calc(100vh - 332px)}
+          .ais-layout{grid-template-columns:1fr!important;grid-template-rows:240px 1fr;height:auto;min-height:calc(100vh - 52px);padding-bottom:70px}
+          .ais-3d{min-height:240px!important;max-height:260px}
+          .ais-panel{border-left:none!important;max-height:none;min-height:calc(100vh - 362px);height:calc(100vh - 362px)}
         }
         .ais-panel ::-webkit-scrollbar{width:4px;height:0}
         .ais-panel ::-webkit-scrollbar-track{background:transparent}

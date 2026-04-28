@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.vipbrand.store",
+      "sha256_cert_fingerprints": [
+        "49:78:27:B2:21:7F:A6:6C:4A:33:33:97:2E:9C:19:2E:FB:07:1B:98:A1:2D:1F:05:5D:B8:ED:7A:7C:63:F0:B0"
+      ]
+    }
+  }
+]

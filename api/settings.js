@@ -97,6 +97,9 @@ const settingsSchema = new mongoose.Schema({
   /* Mystery Text */
   mysteryText: { type: String, default: '🎉 ألف مبروك! كسبت معانا هدية حصرية!' },
 
+  /* PWA Install Count */
+  installCount: { type: Number, default: 0 },
+
 }, { timestamps: true, minimize: false });
 
 const Settings = mongoose.models.SiteSettings || mongoose.model('SiteSettings', settingsSchema);
@@ -143,6 +146,7 @@ export default async function handler(req, res) {
           rewardCosts: doc.rewardCosts,
           prizes: doc.prizes,
           mysteryText: doc.mysteryText,
+          installCount: doc.installCount || 0,
         },
       });
     }
@@ -154,17 +158,39 @@ export default async function handler(req, res) {
 
       if (body.maintenance !== undefined) updates.maintenance = body.maintenance;
       if (body.videos !== undefined) updates.videos = body.videos;
-      if (body.siteTexts !== undefined) updates.siteTexts = body.siteTexts;
-      if (body.storePricing !== undefined) updates.storePricing = body.storePricing;
-      if (body.rewardCosts !== undefined) updates.rewardCosts = body.rewardCosts;
-      if (body.prizes !== undefined) updates.prizes = body.prizes;
       if (body.mysteryText !== undefined) updates.mysteryText = body.mysteryText;
+      if (body.prizes !== undefined) updates.prizes = body.prizes;
 
-      const doc = await Settings.findOneAndUpdate(
-        { key: 'main' },
-        { $set: updates },
-        { returnDocument: 'after', lean: true, upsert: true }
-      );
+      // Merge siteTexts, storePricing, rewardCosts with existing data
+      if (body.siteTexts !== undefined || body.storePricing !== undefined || body.rewardCosts !== undefined) {
+        const existing = await getSettings();
+        if (body.siteTexts !== undefined) updates.siteTexts = { ...existing.siteTexts, ...body.siteTexts };
+        if (body.storePricing !== undefined) updates.storePricing = { ...existing.storePricing, ...body.storePricing };
+        if (body.rewardCosts !== undefined) updates.rewardCosts = { ...existing.rewardCosts, ...body.rewardCosts };
+      }
+
+      // Handle install count increment
+      let useIncrement = false;
+      if (body.incrementInstall === true) {
+        useIncrement = true;
+      } else if (body.installCount !== undefined) {
+        updates.installCount = body.installCount;
+      }
+
+      let doc;
+      if (useIncrement) {
+        doc = await Settings.findOneAndUpdate(
+          { key: 'main' },
+          { $inc: { installCount: 1 }, $set: updates },
+          { returnDocument: 'after', lean: true, upsert: true }
+        );
+      } else {
+        doc = await Settings.findOneAndUpdate(
+          { key: 'main' },
+          { $set: updates },
+          { returnDocument: 'after', lean: true, upsert: true }
+        );
+      }
 
       return res.status(200).json({
         success: true,
@@ -176,6 +202,7 @@ export default async function handler(req, res) {
           rewardCosts: doc.rewardCosts,
           prizes: doc.prizes,
           mysteryText: doc.mysteryText,
+          installCount: doc.installCount || 0,
         },
       });
     }

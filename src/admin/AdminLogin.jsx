@@ -18,7 +18,7 @@ export default function AdminLogin() {
       const result = login(email, password);
       if (!result.success) setError(result.error);
       setIsLoading(false);
-    }, 600);
+    }, 100);
   };
 
   return (

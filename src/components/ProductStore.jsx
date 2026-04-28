@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useCallback } from 'react';
+import { useRef, useState, useMemo, useCallback, memo } from 'react';
 import { useAdmin } from '../context/AdminContext';
 
 /* ─── Helpers ─── */
@@ -19,6 +19,7 @@ function ProductDetailModal({ product, onClose }) {
   const [address, setAddress] = useState('');
   const [phone, setPhone] = useState('');
   const [orderDone, setOrderDone] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState('cod'); // cod = cash on delivery, vodafone = vodafone cash
 
   const whatsapp = siteTexts?.whatsappNumber || WHATSAPP_DEFAULT;
   const sizes = storePricing?.sizes || ['M', 'L', 'XL', '2XL'];
@@ -50,6 +51,7 @@ function ProductDetailModal({ product, onClose }) {
       customerName: customerName.trim(),
       address: address.trim(),
       phone: phone.trim(),
+      paymentMethod: paymentMethod === 'vodafone' ? 'فودافون كاش' : 'كاش عند الاستلام',
     };
     
     addStoreOrder(orderData);
@@ -67,7 +69,7 @@ function ProductDetailModal({ product, onClose }) {
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-h-[92vh] overflow-y-auto"
+        className="relative w-full max-h-[95vh] overflow-y-auto"
         style={{
           maxWidth: '400px',
           background: '#0c0c12',
@@ -75,6 +77,7 @@ function ProductDetailModal({ product, onClose }) {
           border: '1px solid rgba(191,64,191,0.2)',
           boxShadow: '0 0 60px rgba(191,64,191,0.1)',
           animation: 'modalIn 0.15s ease-out',
+          paddingBottom: '20px',
         }}
       >
         {/* Close button */}
@@ -320,6 +323,90 @@ function ProductDetailModal({ product, onClose }) {
                     />
                   </div>
 
+                  {/* Payment Method */}
+                  <p style={{
+                    textAlign: 'center', fontSize: '11px', letterSpacing: '0.15em',
+                    textTransform: 'uppercase', color: '#888', fontWeight: '600',
+                    margin: '4px 0 10px',
+                  }}>
+                    💳 طريقة الدفع
+                  </p>
+
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                    <button
+                      onClick={() => setPaymentMethod('cod')}
+                      style={{
+                        flex: 1, padding: '12px 10px', borderRadius: '12px',
+                        background: paymentMethod === 'cod' ? 'rgba(0,255,102,0.08)' : 'rgba(255,255,255,0.03)',
+                        border: `1.5px solid ${paymentMethod === 'cod' ? 'rgba(0,255,102,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                        cursor: 'pointer', textAlign: 'center',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <span style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}>💵</span>
+                      <span style={{
+                        fontSize: '11px', fontWeight: 700,
+                        color: paymentMethod === 'cod' ? '#00ff66' : '#888',
+                      }}>كاش عند الاستلام</span>
+                    </button>
+                    <button
+                      onClick={() => setPaymentMethod('vodafone')}
+                      style={{
+                        flex: 1, padding: '12px 10px', borderRadius: '12px',
+                        background: paymentMethod === 'vodafone' ? 'rgba(230,0,18,0.08)' : 'rgba(255,255,255,0.03)',
+                        border: `1.5px solid ${paymentMethod === 'vodafone' ? 'rgba(230,0,18,0.3)' : 'rgba(255,255,255,0.06)'}`,
+                        cursor: 'pointer', textAlign: 'center',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <span style={{ fontSize: '20px', display: 'block', marginBottom: '4px' }}>📱</span>
+                      <span style={{
+                        fontSize: '11px', fontWeight: 700,
+                        color: paymentMethod === 'vodafone' ? '#e60012' : '#888',
+                      }}>فودافون كاش</span>
+                    </button>
+                  </div>
+
+                  {/* Vodafone Cash Info */}
+                  {paymentMethod === 'vodafone' && (
+                    <div style={{
+                      padding: '12px 14px', borderRadius: '12px',
+                      background: 'rgba(230,0,18,0.06)',
+                      border: '1px solid rgba(230,0,18,0.15)',
+                      marginBottom: '14px', direction: 'rtl',
+                      animation: 'fadeInUp 0.3s ease-out',
+                    }}>
+                      <p style={{ fontSize: '12px', fontWeight: 700, color: '#e60012', margin: '0 0 6px' }}>
+                        📱 حوّل على رقم فودافون كاش:
+                      </p>
+                      <div style={{
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        gap: '8px', padding: '10px', borderRadius: '10px',
+                        background: 'rgba(230,0,18,0.08)',
+                        border: '1px solid rgba(230,0,18,0.2)',
+                      }}>
+                        <span style={{
+                          fontSize: '20px', fontWeight: 900, color: '#fff',
+                          fontFamily: "'Inter', monospace", letterSpacing: '2px',
+                          direction: 'ltr',
+                        }}>01006527185</span>
+                        <button
+                          onClick={() => {
+                            navigator.clipboard?.writeText('01006527185');
+                          }}
+                          style={{
+                            background: 'rgba(230,0,18,0.15)', border: 'none',
+                            color: '#e60012', fontSize: '10px', fontWeight: 700,
+                            padding: '4px 8px', borderRadius: '6px', cursor: 'pointer',
+                          }}
+                        >نسخ 📋</button>
+                      </div>
+                      <p style={{ fontSize: '10px', color: '#888', margin: '6px 0 0', textAlign: 'center' }}>
+                        حوّل المبلغ وابعتلنا صورة التحويل على الواتساب
+                      </p>
+                    </div>
+                  )}
+
                   {/* Price Summary */}
                   <div style={{
                     padding: '12px 14px', borderRadius: '12px',
@@ -437,9 +524,15 @@ function ProductDetailModal({ product, onClose }) {
                   <span>📱 الرقم</span><span style={{ color: '#f2f2f7', direction: 'ltr' }}>{phone}</span>
                 </div>
                 <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '6px 0' }} />
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <span style={{ fontWeight: '700' }}>💰 الإجمالي</span>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>💰 الإجمالي</span>
                   <span style={{ fontWeight: '800', color: '#bf40bf', fontSize: '14px' }}>{currentPrice} EGP</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  <span>💳 الدفع</span>
+                  <span style={{ fontWeight: '700', color: paymentMethod === 'vodafone' ? '#e60012' : '#00ff66', fontSize: '12px' }}>
+                    {paymentMethod === 'vodafone' ? '📱 فودافون كاش' : '💵 كاش عند الاستلام'}
+                  </span>
                 </div>
               </div>
 
@@ -486,7 +579,7 @@ function ProductDetailModal({ product, onClose }) {
 /* ═══════════════════════════════════════════════════
    LIGHTWEIGHT PRODUCT CARD — "إضغط للشراء" button
    ═══════════════════════════════════════════════════ */
-function LightCard({ product, onOpenDetail, buyButtonText }) {
+const LightCard = memo(function LightCard({ product, onOpenDetail, buyButtonText }) {
   const [imgError, setImgError] = useState(false);
 
   return (
@@ -503,6 +596,7 @@ function LightCard({ product, onOpenDetail, buyButtonText }) {
             className="w-full h-full"
             style={{ objectFit: 'contain', transition: 'transform 0.3s ease' }}
             loading="lazy"
+            decoding="async"
             onError={() => setImgError(true)}
           />
         ) : (
@@ -533,7 +627,7 @@ function LightCard({ product, onOpenDetail, buyButtonText }) {
       </div>
     </div>
   );
-}
+});
 
 /* ═══════════════════════════════════════════════════
    SECTION BANNERS — CSS only
@@ -579,9 +673,21 @@ function SectionBanner({ id, titleEn, titleAr, subtitle }) {
 export default function ProductStore() {
   const { products, siteTexts } = useAdmin();
   const [detailProduct, setDetailProduct] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const productsBoys = useMemo(() => products.filter(p => p.gender === 'boys' && p.inStock !== false), [products]);
-  const productsGirls = useMemo(() => products.filter(p => p.gender === 'girls' && p.inStock !== false), [products]);
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return products.filter(p => p.inStock !== false);
+    return products.filter(p => {
+      if (p.inStock === false) return false;
+      const name = (p.name || '').toLowerCase();
+      const nameAr = (p.nameAr || '').toLowerCase();
+      return name.includes(q) || nameAr.includes(q);
+    });
+  }, [products, searchQuery]);
+
+  const productsBoys = useMemo(() => filteredProducts.filter(p => p.gender === 'boys'), [filteredProducts]);
+  const productsGirls = useMemo(() => filteredProducts.filter(p => p.gender === 'girls'), [filteredProducts]);
 
   const handleOpenDetail = useCallback((product) => {
     setDetailProduct(product);
@@ -618,6 +724,51 @@ export default function ProductStore() {
               اضغط على أي منتج لبدء الطلب · Tap any product to order
             </span>
           </p>
+
+          {/* ─── Search Bar ─── */}
+          <div style={{ maxWidth: 420, margin: '18px auto 0', position: 'relative' }}>
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 10,
+              padding: '10px 16px', borderRadius: 16,
+              background: 'rgba(255,255,255,0.03)',
+              border: '1px solid rgba(191,64,191,0.15)',
+              transition: 'border-color 0.3s',
+            }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#bf40bf" strokeWidth="2" strokeLinecap="round">
+                <circle cx="11" cy="11" r="8" />
+                <path d="M21 21l-4.35-4.35" />
+              </svg>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="ابحث عن منتج... / Search..."
+                style={{
+                  flex: 1, background: 'none', border: 'none', outline: 'none',
+                  color: '#f2f2f7', fontSize: 13, fontFamily: "'Inter', sans-serif",
+                  direction: 'rtl',
+                }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  style={{
+                    background: 'rgba(191,64,191,0.15)', border: 'none',
+                    color: '#d966d9', fontSize: 12, cursor: 'pointer',
+                    width: 22, height: 22, borderRadius: '50%',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >✕</button>
+              )}
+            </div>
+            {searchQuery && (
+              <p style={{ fontSize: 11, color: '#888', margin: '8px 0 0', textAlign: 'center' }}>
+                {filteredProducts.length > 0
+                  ? `تم العثور على ${filteredProducts.length} منتج`
+                  : 'مفيش نتائج — جرب كلمة تانية'}
+              </p>
+            )}
+          </div>
         </div>
 
         {/* Product Grid */}

@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c0020"/>
+      <stop offset="50%" stop-color="#050010"/>
+      <stop offset="100%" stop-color="#0c0020"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#bf40bf"/>
+      <stop offset="50%" stop-color="#7b2fff"/>
+      <stop offset="100%" stop-color="#bf40bf"/>
+    </linearGradient>
+    <linearGradient id="text" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#e0c0e0"/>
+      <stop offset="70%" stop-color="#bf40bf"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3.84" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <rect width="192" height="192" rx="35" fill="url(#bg)"/>
+  <rect x="13.799999999999999" y="13.799999999999999" width="164.4" height="164.4" rx="28" fill="none" stroke="url(#accent)" stroke-width="1.536" opacity="0.3"/>
+  <circle cx="96" cy="72.96000000000001" r="28.799999999999997" fill="url(#accent)" opacity="0.08"/>
+  <text x="96" y="92.16" text-anchor="middle" font-family="'Arial Black', 'Helvetica', sans-serif" font-weight="900" font-size="54" fill="url(#text)" filter="url(#glow)" letter-spacing="3.84">VIP</text>
+  <text x="96" y="124.80000000000001" text-anchor="middle" font-family="'Arial', sans-serif" font-weight="600" font-size="15" fill="#bf40bf" letter-spacing="2.88" opacity="0.8">BRAND</text>
+  <line x1="57.599999999999994" y1="138.24" x2="134.39999999999998" y2="138.24" stroke="url(#accent)" stroke-width="0.96" opacity="0.3"/>
+  <text x="96" y="157.44" text-anchor="middle" font-family="'Arial', sans-serif" font-weight="400" font-size="10.5" fill="#99999f" opacity="0.6">⚡ LUXURY STREETWEAR</text>
+</svg>

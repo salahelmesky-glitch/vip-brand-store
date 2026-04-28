@@ -197,6 +197,11 @@ export default function StoreOrdersPage() {
                   >👕 {order.productName} {order.productImg ? '🔍' : ''}</span>
                   <span>📏 {order.size}</span>
                   <span>📍 {order.governorate}</span>
+                  {order.paymentMethod && (
+                    <span style={{ color: order.paymentMethod === 'فودافون كاش' ? '#e60012' : '#00ff66', fontWeight: 600 }}>
+                      💳 {order.paymentMethod}
+                    </span>
+                  )}
                   <span style={{ marginLeft: 'auto', fontSize: 10, color: '#555' }}>
                     {new Date(order.createdAt).toLocaleDateString('ar-EG', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                   </span>

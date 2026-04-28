@@ -1,21 +1,115 @@
 <!DOCTYPE html>
-<html lang="en" translate="no">
+<html lang="ar" dir="rtl" translate="no">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
     <meta name="google" content="notranslate" />
-    <meta http-equiv="Content-Language" content="en" />
+    <meta http-equiv="Content-Language" content="ar,en" />
+    
+    <!-- App Icon & PWA -->
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/icons/icon-96.png" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <title>VIP Brand — Luxury Streetwear</title>
-    <meta name="description" content="VIP Brand — Exclusive luxury streetwear. Premium hoodies, t-shirts & accessories. Shop now via WhatsApp." />
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="theme-color" content="#050010" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- Apple PWA — Logo Icon -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="VIP Brand" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
+    
+    <!-- Microsoft Tile -->
+    <meta name="msapplication-TileColor" content="#050010" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144.png" />
+    
+    <!-- === SEO — VIP Brand Search Discovery === -->
+    <title>VIP Brand T-shirts — تيشيرتات VIP براند | ملابس Streetwear فاخرة مصر</title>
+    <meta name="description" content="VIP Brand T-shirts — براند مصري أصلي من كفر الشيخ. أفخم تيشيرتات Streetwear بجودة عالمية. اطلب دلوقتي واتوصل لحد باب بيتك. شحن لكل مصر. 01006527185" />
+    <meta name="keywords" content="VIP, VIP Brand, براند VIP, Brand VIP, VIP brand t-shirts, تيشيرتات VIP, ملابس VIP, VIP ملابس, streetwear, ستريت وير, تيشيرتات, ملابس شبابي, ملابس مصر, كفر الشيخ, fashion, luxury, أزياء, متجر VIP, VIP store, VIP shop, براند تيشيرتات, تيشرتات براند, ملابس براند, VIP Brand Egypt, براند مصري, VIP clothing, ملابس فاخرة, تيشيرتات اوفرسايز" />
+    <meta name="author" content="VIP Brand T-shirts" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <link rel="canonical" href="https://salah-nine.vercel.app/" />
+    
+    <!-- Open Graph / Facebook / WhatsApp -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://salah-nine.vercel.app/" />
+    <meta property="og:title" content="VIP Brand — أفخم تيشيرتات Streetwear في مصر 🔥" />
+    <meta property="og:description" content="براند مصري أصلي للملابس الـ Streetwear بجودة عالمية. تيشيرتات حصرية، تصاميم جامدة، شحن لكل مصر. اطلب دلوقتي! 📱 01006527185" />
+    <meta property="og:image" content="https://salah-nine.vercel.app/icons/icon-512.png" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    <meta property="og:locale" content="ar_EG" />
+    <meta property="og:site_name" content="VIP Brand T-shirts" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="VIP Brand — Luxury Streetwear T-shirts" />
+    <meta name="twitter:description" content="براند مصري أصلي للملابس الـ Streetwear. تيشيرتات حصرية بجودة عالمية 🔥" />
+    <meta name="twitter:image" content="https://salah-nine.vercel.app/icons/icon-512.png" />
+    
+    <!-- Structured Data / JSON-LD for Google Search -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Store",
+      "name": "VIP Brand T-shirts",
+      "alternateName": ["VIP Brand", "براند VIP", "Brand VIP", "VIP ملابس"],
+      "description": "براند مصري أصلي من كفر الشيخ. أفخم تيشيرتات Streetwear بجودة عالمية. شحن لكل مصر.",
+      "url": "https://salah-nine.vercel.app",
+      "logo": "https://salah-nine.vercel.app/icons/icon-512.png",
+      "image": "https://salah-nine.vercel.app/icons/icon-512.png",
+      "telephone": "+201006527185",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "كفر الشيخ",
+        "addressCountry": "EG"
+      },
+      "priceRange": "EGP 370-440",
+      "openingHoursSpecification": {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"],
+        "opens": "00:00",
+        "closes": "23:59"
+      },
+      "sameAs": [],
+      "hasOfferCatalog": {
+        "@type": "OfferCatalog",
+        "name": "VIP Brand T-shirts Collection",
+        "itemListElement": [
+          {
+            "@type": "Offer",
+            "itemOffered": {
+              "@type": "Product",
+              "name": "VIP Brand Streetwear T-shirt",
+              "category": "Clothing"
+            }
+          }
+        ]
+      }
+    }
+    </script>
+    
+    <!-- No Cache -->
+    <meta http-equiv="Cache-Control" content="no-cache, must-revalidate, max-age=0" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+    
+    <!-- Clean startup — no loading icon -->
+    <style>
+      html, body { background: #050010; margin: 0; }
+      #root:empty {
+        min-height: 100vh; background: #050010;
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
     <script>
-      // Clear old cached data from previous versions
       try {
         localStorage.removeItem('vip_maintenance');
         localStorage.removeItem('vip_videos');

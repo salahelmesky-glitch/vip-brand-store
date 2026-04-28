@@ -49,7 +49,7 @@ function OrderNotificationBanner({ alert, onDismiss, onGoToOrders }) {
   return (
     <div style={{
       position: 'fixed', top: 0, left: 0, right: 0, zIndex: 9999,
-      padding: '0 12px',
+      padding: '0 12px', direction: 'ltr',
       animation: exiting ? 'notifSlideOut 0.3s ease-in forwards' : 'notifSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
     }}>
       <div style={{
@@ -57,8 +57,7 @@ function OrderNotificationBanner({ alert, onDismiss, onGoToOrders }) {
         background: 'linear-gradient(135deg, rgba(10,10,16,0.98), rgba(15,8,30,0.98))',
         borderRadius: 18,
         border: '1px solid rgba(0,255,102,0.3)',
-        boxShadow: '0 8px 40px rgba(0,255,102,0.15), 0 0 80px rgba(0,255,102,0.05), inset 0 1px 0 rgba(255,255,255,0.05)',
-        backdropFilter: 'blur(20px)',
+        boxShadow: '0 8px 40px rgba(0,255,102,0.15)',
         overflow: 'hidden',
       }}>
         {/* Animated glow bar at top */}
@@ -78,10 +77,10 @@ function OrderNotificationBanner({ alert, onDismiss, onGoToOrders }) {
                 background: 'rgba(0,255,102,0.12)',
                 border: '1px solid rgba(0,255,102,0.25)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, animation: 'bellRing 0.6s ease-in-out',
+                fontSize: 18,
               }}>🔔</div>
               <div>
-                <p style={{ fontSize: 13, fontWeight: 800, color: '#00ff66', margin: 0, letterSpacing: '0.02em' }}>
+                <p style={{ fontSize: 13, fontWeight: 800, color: '#00ff66', margin: 0 }}>
                   🛍️ طلب جديد!
                   {alert.count > 1 && <span style={{ fontSize: 11, marginRight: 6, color: '#25D366' }}>({alert.count} طلبات)</span>}
                 </p>
@@ -131,7 +130,7 @@ function OrderNotificationBanner({ alert, onDismiss, onGoToOrders }) {
               background: 'linear-gradient(135deg, rgba(0,255,102,0.15), rgba(37,211,102,0.1))',
               border: '1px solid rgba(0,255,102,0.25)',
               color: '#00ff66', fontSize: 12, fontWeight: 700,
-              cursor: 'pointer', transition: 'all 0.2s',
+              cursor: 'pointer',
               fontFamily: "'Noto Sans Arabic', 'Inter', sans-serif",
             }}
           >
@@ -153,25 +152,35 @@ function OrderNotificationBanner({ alert, onDismiss, onGoToOrders }) {
           0% { background-position: 200% 0; }
           100% { background-position: -200% 0; }
         }
-        @keyframes bellRing {
-          0% { transform: rotate(0deg); }
-          15% { transform: rotate(14deg); }
-          30% { transform: rotate(-14deg); }
-          45% { transform: rotate(10deg); }
-          60% { transform: rotate(-8deg); }
-          75% { transform: rotate(4deg); }
-          90% { transform: rotate(-2deg); }
-          100% { transform: rotate(0deg); }
-        }
       `}</style>
     </div>
   );
 }
 
 export default function AdminLayout() {
-  const { isAuthenticated, newOrderAlert, setNewOrderAlert } = useAdmin();
+  const { isAuthenticated, newOrderAlert, setNewOrderAlert, pushEnabled, registerAndSubscribePush } = useAdmin();
   const [currentPage, setCurrentPage] = useState('dashboard');
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(
+    typeof window !== 'undefined' ? window.innerWidth >= 768 : true
+  );
+
+  useEffect(() => {
+    const handleResize = () => setIsDesktop(window.innerWidth >= 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  /* Auto-subscribe to push notifications when admin opens dashboard */
+  useEffect(() => {
+    if (isAuthenticated && !pushEnabled) {
+      // Small delay to not block initial render
+      const timer = setTimeout(() => {
+        registerAndSubscribePush();
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isAuthenticated, pushEnabled, registerAndSubscribePush]);
 
   if (!isAuthenticated) return <AdminLogin />;
 
@@ -205,6 +214,8 @@ export default function AdminLayout() {
       background: '#050505',
       color: '#f2f2f7',
       fontFamily: "'Inter', 'Noto Sans Arabic', sans-serif",
+      direction: 'ltr',
+      textAlign: 'left',
     }}>
       {/* 🔔 New Order Notification Banner */}
       <OrderNotificationBanner
@@ -220,15 +231,15 @@ export default function AdminLayout() {
         onCloseMobile={() => setIsMobileOpen(false)}
       />
 
-      {/* Main content */}
+      {/* Main content — offset by sidebar on desktop */}
       <div style={{
-        marginLeft: typeof window !== 'undefined' && window.innerWidth >= 768 ? 250 : 0,
-        transition: 'margin-left 0.3s',
+        marginLeft: isDesktop ? 250 : 0,
+        transition: 'margin-left 0.25s ease',
         minHeight: '100vh',
       }}>
         {/* Top Bar */}
         <div style={{
-          padding: '18px 24px',
+          padding: '14px 20px',
           display: 'flex', alignItems: 'center', gap: 12,
           borderBottom: '1px solid rgba(191,64,191,0.06)',
           background: 'rgba(5,5,5,0.95)',
@@ -236,22 +247,23 @@ export default function AdminLayout() {
           position: 'sticky', top: 0, zIndex: 100,
         }}>
           {/* Mobile menu button */}
-          <button
-            onClick={() => setIsMobileOpen(!isMobileOpen)}
-            style={{
-              display: typeof window !== 'undefined' && window.innerWidth >= 768 ? 'none' : 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              width: 38, height: 38, borderRadius: 10,
-              border: '1px solid rgba(191,64,191,0.12)',
-              background: 'rgba(191,64,191,0.06)',
-              color: '#d966d9', cursor: 'pointer', fontSize: 18,
-            }}
-          >☰</button>
+          {!isDesktop && (
+            <button
+              onClick={() => setIsMobileOpen(!isMobileOpen)}
+              style={{
+                display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                width: 38, height: 38, borderRadius: 10,
+                border: '1px solid rgba(191,64,191,0.12)',
+                background: 'rgba(191,64,191,0.06)',
+                color: '#d966d9', cursor: 'pointer', fontSize: 18,
+              }}
+            >☰</button>
+          )}
 
           <h1 style={{
-            fontSize: 18, fontWeight: 700,
+            fontSize: 17, fontWeight: 700, margin: 0,
             fontFamily: "'Noto Sans Arabic', sans-serif",
-            direction: 'rtl',
           }}>{pageTitle[currentPage]}</h1>
 
           {/* Back to store link */}
@@ -277,7 +289,7 @@ export default function AdminLayout() {
         </div>
 
         {/* Page Content */}
-        <div style={{ padding: '24px' }}>
+        <div style={{ padding: '20px', maxWidth: '100%', overflowX: 'hidden' }}>
           {renderPage()}
         </div>
       </div>

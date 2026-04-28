@@ -11,3 +11,20 @@ createRoot(document.getElementById('root')).render(
     </BrowserRouter>
   </StrictMode>,
 );
+
+/* ═══════════════════════════════════════════════════
+   Register Service Worker for PWA
+   ═══════════════════════════════════════════════════ */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js')
+      .then((reg) => {
+        console.log('⚡ VIP SW registered:', reg.scope);
+        // Auto-update check every 30 minutes
+        setInterval(() => reg.update(), 30 * 60 * 1000);
+      })
+      .catch((err) => {
+        console.log('SW registration failed:', err);
+      });
+  });
+}

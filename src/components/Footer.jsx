@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const WHATSAPP_NUMBER = '201006527185';
@@ -30,9 +30,10 @@ const footerLinks = {
     { label: 'All Products / جميع المنتجات', href: '#store' },
   ],
   'Support / الدعم': [
-    { label: 'Size Guide / دليل المقاسات', href: '#' },
-    { label: 'Shipping / الشحن', href: '#' },
-    { label: 'FAQ / أسئلة شائعة', href: '#' },
+    { label: 'Size Guide / دليل المقاسات', href: '/size-guide', isRoute: true },
+    { label: 'Shipping / الشحن', href: '/shipping', isRoute: true },
+    { label: 'FAQ / أسئلة شائعة', href: '/faq', isRoute: true },
+    { label: 'Track Order / تتبع الطلب', href: '/track-order', isRoute: true },
   ],
 };
 
@@ -113,9 +114,15 @@ export default function Footer() {
                 <ul className="space-y-2.5 md:space-y-3">
                   {links.map((link) => (
                     <li key={link.label}>
-                      <a href={link.href} className="text-xs md:text-sm text-white-60 hover:text-holo transition-colors duration-300">
-                        {link.label}
-                      </a>
+                      {link.isRoute ? (
+                        <RouterLink to={link.href} className="text-xs md:text-sm text-white-60 hover:text-holo transition-colors duration-300">
+                          {link.label}
+                        </RouterLink>
+                      ) : (
+                        <a href={link.href} className="text-xs md:text-sm text-white-60 hover:text-holo transition-colors duration-300">
+                          {link.label}
+                        </a>
+                      )}
                     </li>
                   ))}
                   {/* Contact button in Support column */}

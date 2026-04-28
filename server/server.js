@@ -17,6 +17,7 @@ import productRoutes from './routes/productRoutes.js';
 import userRoutes from './routes/userRoutes.js';
 import storeOrderRoutes from './routes/storeOrderRoutes.js';
 import settingsRoutes from './routes/settingsRoutes.js';
+import newsletterRoutes from './routes/newsletterRoutes.js';
 
 dotenv.config();
 
@@ -90,6 +91,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/store-orders', storeOrderRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/newsletter', newsletterRoutes);
 
 /* ─── 404 Handler ────────────────────────── */
 app.use((_req, res) => {

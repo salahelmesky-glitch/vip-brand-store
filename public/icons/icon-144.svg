@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0c0020"/>
+      <stop offset="50%" stop-color="#050010"/>
+      <stop offset="100%" stop-color="#0c0020"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#bf40bf"/>
+      <stop offset="50%" stop-color="#7b2fff"/>
+      <stop offset="100%" stop-color="#bf40bf"/>
+    </linearGradient>
+    <linearGradient id="text" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="40%" stop-color="#e0c0e0"/>
+      <stop offset="70%" stop-color="#bf40bf"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.88" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+  </defs>
+  <rect width="144" height="144" rx="26" fill="url(#bg)"/>
+  <rect x="10.2" y="10.2" width="123.6" height="123.6" rx="20.8" fill="none" stroke="url(#accent)" stroke-width="1.1520000000000001" opacity="0.3"/>
+  <circle cx="72" cy="54.72" r="21.599999999999998" fill="url(#accent)" opacity="0.08"/>
+  <text x="72" y="69.12" text-anchor="middle" font-family="'Arial Black', 'Helvetica', sans-serif" font-weight="900" font-size="40" fill="url(#text)" filter="url(#glow)" letter-spacing="2.88">VIP</text>
+  <text x="72" y="93.60000000000001" text-anchor="middle" font-family="'Arial', sans-serif" font-weight="600" font-size="12" fill="#bf40bf" letter-spacing="2.16" opacity="0.8">BRAND</text>
+  <line x1="43.199999999999996" y1="103.67999999999999" x2="100.8" y2="103.67999999999999" stroke="url(#accent)" stroke-width="0.72" opacity="0.3"/>
+  <text x="72" y="118.08" text-anchor="middle" font-family="'Arial', sans-serif" font-weight="400" font-size="8.399999999999999" fill="#99999f" opacity="0.6">⚡ LUXURY STREETWEAR</text>
+</svg>

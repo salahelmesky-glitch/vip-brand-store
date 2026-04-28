@@ -5,6 +5,9 @@ const AdminContext = createContext();
 /* ─── API Base URL ─── */
 const API_BASE = '/api';
 
+/* ─── VAPID Public Key for Push Notifications ─── */
+const VAPID_PUBLIC_KEY = 'BKdOg_84LUt592Fxx3ApvjQab8m6LbfI02WdPWkyujIedjOsRd16MOrFp-Z_adC-ETNIMub1fmaIovrAf47Ffqo';
+
 /* ─── Default Admin Credentials ─── */
 const ADMIN_CREDENTIALS = {
   email: 'VIP_Salah_Admin',
@@ -20,8 +23,8 @@ const buildDefaults = () =>
     const num = i + 1;
     return {
       id: num,
-      name: `Model #${num}`,
-      nameAr: `موديل #${toAr(num)}`,
+      name: `🔥 Inter lock ${num} 🔥`,
+      nameAr: `🔥 انترلوك ${toAr(num)} 🔥`,
       img: `/images/${num}.jpg`,
       price: 500,
       gender: num <= 50 ? 'boys' : 'girls',
@@ -90,6 +93,22 @@ export const AdminProvider = ({ children }) => {
   const [apiError, setApiError] = useState(null);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
+  /* ══════════════════════════════════════════════════════
+     POLL GUARD — Prevents polling from overwriting
+     optimistic updates while an admin write is in-flight.
+     After any admin write, polling pauses for 5 seconds
+     then does a fresh fetch to get the saved data.
+     ══════════════════════════════════════════════════════ */
+  const pollGuardUntilRef = useRef(0); // timestamp until which polling is paused
+
+  const startPollGuard = useCallback(() => {
+    pollGuardUntilRef.current = Date.now() + 5000; // pause polling 5 seconds
+  }, []);
+
+  const isPollGuarded = useCallback(() => {
+    return Date.now() < pollGuardUntilRef.current;
+  }, []);
+
   /* ── Legacy Orders (localStorage) ── */
   const [orders, setOrders] = useState(() => {
     try {
@@ -106,6 +125,11 @@ export const AdminProvider = ({ children }) => {
   const [newOrderAlert, setNewOrderAlert] = useState(null); // { order, timestamp }
   const prevOrderCountRef = useRef(null); // null = first load, don't alert
   const prevOrderIdsRef = useRef(new Set());
+
+  /* ── Push Notification State ── */
+  const [pushEnabled, setPushEnabled] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const pushCheckedRef = useRef(false);
 
   /* Play notification sound using Web Audio API */
   const playNotificationSound = useCallback(() => {
@@ -150,12 +174,130 @@ export const AdminProvider = ({ children }) => {
     }
   }, []);
 
-  /* Request notification permission on admin auth */
-  useEffect(() => {
-    if (isAuthenticated && 'Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
+  /* ── Helper: Convert VAPID key to Uint8Array ── */
+  const urlBase64ToUint8Array = useCallback((base64String) => {
+    const padding = '='.repeat((4 - base64String.length % 4) % 4);
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const rawData = window.atob(base64);
+    const outputArray = new Uint8Array(rawData.length);
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i);
     }
-  }, [isAuthenticated]);
+    return outputArray;
+  }, []);
+
+  /* ── Register Service Worker & Subscribe to Push ── */
+  const registerAndSubscribePush = useCallback(async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      console.warn('[VIP] Push not supported in this browser');
+      return false;
+    }
+
+    try {
+      setPushLoading(true);
+
+      // Register service worker
+      const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      await navigator.serviceWorker.ready;
+      console.log('[VIP] Service Worker registered');
+
+      // Check existing subscription
+      let subscription = await registration.pushManager.getSubscription();
+
+      // If existing subscription, try to validate it by re-saving
+      // If no subscription, create a new one
+      if (!subscription) {
+        // Request notification permission
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          console.warn('[VIP] Notification permission denied');
+          setPushLoading(false);
+          return false;
+        }
+
+        // Subscribe to push
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+        console.log('[VIP] Push subscription created');
+      } else {
+        console.log('[VIP] Existing push subscription found, re-saving to server');
+      }
+
+      // Always send subscription to server (upsert) to keep it fresh
+      const res = await fetch(`${API_BASE}/push-subscribe`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subscription: subscription.toJSON(),
+          label: 'admin',
+        }),
+      });
+
+      if (res.ok) {
+        setPushEnabled(true);
+        console.log('[VIP] ✅ Push subscription saved to server');
+        return true;
+      }
+    } catch (err) {
+      console.error('[VIP] Push subscription failed:', err);
+      // If subscription is expired/broken, try to re-subscribe
+      try {
+        const reg = await navigator.serviceWorker.getRegistration();
+        if (reg) {
+          const oldSub = await reg.pushManager.getSubscription();
+          if (oldSub) await oldSub.unsubscribe();
+          // Retry fresh subscribe
+          const newSub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+          });
+          const res2 = await fetch(`${API_BASE}/push-subscribe`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ subscription: newSub.toJSON(), label: 'admin' }),
+          });
+          if (res2.ok) {
+            setPushEnabled(true);
+            console.log('[VIP] ✅ Push RE-subscribed successfully');
+            return true;
+          }
+        }
+      } catch (retryErr) {
+        console.error('[VIP] Push re-subscribe also failed:', retryErr);
+      }
+    } finally {
+      setPushLoading(false);
+    }
+    return false;
+  }, [urlBase64ToUint8Array]);
+
+  /* ── Check push subscription status ── */
+  const checkPushStatus = useCallback(async () => {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    try {
+      const registration = await navigator.serviceWorker.getRegistration();
+      if (registration) {
+        const subscription = await registration.pushManager.getSubscription();
+        setPushEnabled(!!subscription);
+      }
+    } catch (e) {
+      // ignore
+    }
+  }, []);
+
+  /* Auto-register push on admin auth */
+  useEffect(() => {
+    if (isAuthenticated && !pushCheckedRef.current) {
+      pushCheckedRef.current = true;
+      // Check status first, auto-subscribe if not already
+      checkPushStatus().then((status) => {
+        // Auto-subscribe on first login
+        registerAndSubscribePush();
+      });
+    }
+  }, [isAuthenticated, checkPushStatus, registerAndSubscribePush]);
 
   /* ══════════════════════════════════════════════
      SETTINGS — ALL from MongoDB API (NOT localStorage)
@@ -168,6 +310,10 @@ export const AdminProvider = ({ children }) => {
   const [prizes, setPrizes] = useState(DEFAULT_PRIZES);
   const [mysteryText, setMysteryText] = useState('🎉 ألف مبروك! كسبت معانا هدية حصرية!');
   const [settingsLoaded, setSettingsLoaded] = useState(false);
+  const [installCount, setInstallCount] = useState(() => {
+    try { return parseInt(localStorage.getItem('vip_install_count') || '0', 10); }
+    catch { return 0; }
+  });
 
   /* ── Newsletters (MongoDB-backed) ── */
   const [newsletters, setNewsletters] = useState([]);
@@ -176,7 +322,9 @@ export const AdminProvider = ({ children }) => {
   /* ─────────────────────────────────────────
      Fetch Settings from API (MongoDB)
      ───────────────────────────────────────── */
-  const fetchSettings = useCallback(async () => {
+  const fetchSettings = useCallback(async (force = false) => {
+    // Skip if poll guard is active (admin just made a change) — unless forced
+    if (!force && isPollGuarded()) return;
     try {
       const ts = Date.now();
       const res = await fetch(`${API_BASE}/settings?_t=${ts}`, {
@@ -197,17 +345,21 @@ export const AdminProvider = ({ children }) => {
         setRewardCosts({ ...DEFAULT_REWARD_COSTS, ...(d.rewardCosts || {}) });
         setPrizes(d.prizes?.length ? d.prizes : DEFAULT_PRIZES);
         setMysteryText(d.mysteryText || '🎉 ألف مبروك! كسبت معانا هدية حصرية!');
+        const ic = d.installCount ?? 0;
+        setInstallCount(ic);
+        try { localStorage.setItem('vip_install_count', String(ic)); } catch {}
         setSettingsLoaded(true);
       }
     } catch (err) {
       console.warn('[VIP] Settings API fetch failed:', err.message);
     }
-  }, []);
+  }, [isPollGuarded]);
 
   /* ─────────────────────────────────────────
      Update Settings on API (MongoDB)
      ───────────────────────────────────────── */
   const updateSettings = useCallback(async (updates) => {
+    startPollGuard(); // ⛔ Pause polling to prevent overwriting optimistic updates
     try {
       const res = await fetch(`${API_BASE}/settings`, {
         method: 'PUT',
@@ -224,13 +376,18 @@ export const AdminProvider = ({ children }) => {
         setRewardCosts({ ...DEFAULT_REWARD_COSTS, ...(d.rewardCosts || {}) });
         setPrizes(d.prizes?.length ? d.prizes : DEFAULT_PRIZES);
         setMysteryText(d.mysteryText || '🎉 ألف مبروك! كسبت معانا هدية حصرية!');
+        const ic2 = d.installCount ?? 0;
+        setInstallCount(ic2);
+        try { localStorage.setItem('vip_install_count', String(ic2)); } catch {}
       }
       return json;
     } catch (err) {
       console.error('[VIP] Settings update failed:', err);
+      // On failure, force re-fetch to restore correct state
+      setTimeout(() => fetchSettings(true), 500);
       return { success: false };
     }
-  }, []);
+  }, [startPollGuard, fetchSettings]);
 
   /* ─────────────────────────────────────────
      Convenience update functions for admin pages
@@ -267,6 +424,22 @@ export const AdminProvider = ({ children }) => {
     return updateSettings({ prizes: newPrizes });
   }, [updateSettings]);
 
+  const incrementInstallCount = useCallback(async () => {
+    try {
+      const res = await fetch(`${API_BASE}/settings`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ incrementInstall: true }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        setInstallCount(json.data.installCount ?? 0);
+      }
+    } catch (err) {
+      console.warn('[VIP] Install count increment failed:', err);
+    }
+  }, []);
+
   const updateMysteryText = useCallback(async (text) => {
     setMysteryText(text); // optimistic
     return updateSettings({ mysteryText: text });
@@ -275,7 +448,9 @@ export const AdminProvider = ({ children }) => {
   /* ─────────────────────────────────────────
      Fetch Products from API
      ───────────────────────────────────────── */
-  const fetchProducts = useCallback(async (showLoading = false) => {
+  const fetchProducts = useCallback(async (showLoading = false, force = false) => {
+    // Skip if poll guard is active — unless forced
+    if (!force && isPollGuarded()) return;
     try {
       if (showLoading) setIsLoading(true);
       const ts = Date.now();
@@ -300,7 +475,7 @@ export const AdminProvider = ({ children }) => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isPollGuarded]);
 
   /* ─────────────────────────────────────────
      Fetch Store Orders from MongoDB
@@ -378,27 +553,28 @@ export const AdminProvider = ({ children }) => {
     fetchNewsletters();
   }, [fetchProducts, fetchStoreOrders, fetchSettings, fetchNewsletters, refreshTrigger]);
 
-  /* ── Poll products every 8 seconds ── */
+  /* ── Poll products every 3 seconds (guard-aware) ── */
   useEffect(() => {
-    const interval = setInterval(() => { fetchProducts(false); }, 8000);
+    const interval = setInterval(() => { fetchProducts(false); }, 3000);
     return () => clearInterval(interval);
   }, [fetchProducts]);
 
-  /* ── Poll store orders and newsletters every 1 second ── */
+  /* ── Poll store orders and newsletters every 5 seconds ── */
   useEffect(() => {
     const interval = setInterval(() => { 
       fetchStoreOrders(); 
       fetchNewsletters();
-    }, 1000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [fetchStoreOrders, fetchNewsletters]);
 
   /* ══════════════════════════════════════════════════
-     Poll settings every 1 second — ALL clients see
-     admin changes instantly!
+     Poll settings every 2 seconds (guard-aware) —
+     admin changes appear for customers within 2 sec!
+     Polling is auto-paused during admin writes.
      ══════════════════════════════════════════════════ */
   useEffect(() => {
-    const interval = setInterval(() => { fetchSettings(); }, 1000);
+    const interval = setInterval(() => { fetchSettings(); }, 2000);
     return () => clearInterval(interval);
   }, [fetchSettings]);
 
@@ -424,6 +600,7 @@ export const AdminProvider = ({ children }) => {
      Products CRUD — synced with API + immediate re-fetch
      ───────────────────────────────────────── */
   const addProduct = useCallback(async (product) => {
+    startPollGuard(); // ⛔ Pause polling
     const tempId = Date.now();
     const newProduct = { ...product, id: tempId };
     setProducts((prev) => [...prev, newProduct]);
@@ -438,7 +615,8 @@ export const AdminProvider = ({ children }) => {
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
-          setRefreshTrigger((n) => n + 1);
+          // Re-fetch products after save to get correct data
+          setTimeout(() => fetchProducts(false, true), 300);
           return json.data;
         }
       }
@@ -447,9 +625,10 @@ export const AdminProvider = ({ children }) => {
     }
 
     return newProduct;
-  }, []);
+  }, [startPollGuard, fetchProducts]);
 
   const updateProduct = useCallback(async (id, updates) => {
+    startPollGuard(); // ⛔ Pause polling
     setProducts((prev) =>
       prev.map((p) => (p.id === id ? { ...p, ...updates } : p))
     );
@@ -462,16 +641,18 @@ export const AdminProvider = ({ children }) => {
       });
 
       if (res.ok) {
-        setRefreshTrigger((n) => n + 1);
+        // Re-fetch after save
+        setTimeout(() => fetchProducts(false, true), 300);
       } else {
         console.error('[VIP] Failed to update product in API');
       }
     } catch (err) {
       console.error('[VIP] Failed to update product in API:', err);
     }
-  }, []);
+  }, [startPollGuard, fetchProducts]);
 
   const deleteProduct = useCallback(async (id) => {
+    startPollGuard(); // ⛔ Pause polling
     setProducts((prev) => prev.filter((p) => p.id !== id));
 
     try {
@@ -482,14 +663,15 @@ export const AdminProvider = ({ children }) => {
       });
 
       if (res.ok) {
-        setRefreshTrigger((n) => n + 1);
+        // Re-fetch after delete
+        setTimeout(() => fetchProducts(false, true), 300);
       } else {
         console.error('[VIP] Failed to delete product from API');
       }
     } catch (err) {
       console.error('[VIP] Failed to delete product from API:', err);
     }
-  }, []);
+  }, [startPollGuard, fetchProducts]);
 
   /* ── Legacy Orders ── */
   const addOrder = useCallback((order) => {
@@ -622,8 +804,12 @@ export const AdminProvider = ({ children }) => {
         isLoading, apiError,
         fetchStoreOrders,
         newsletters, deleteNewsletter, newslettersLoading,
+        /* Install Count */
+        installCount, incrementInstallCount,
         /* New Order Notification */
         newOrderAlert, setNewOrderAlert,
+        /* Push Notifications */
+        pushEnabled, pushLoading, registerAndSubscribePush,
       }}
     >
       {children}

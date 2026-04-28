@@ -3,13 +3,21 @@
  *  Vercel Serverless Function — /api/store-orders
  *  Handles store orders (MongoDB-backed)
  *  GET    → return all orders
- *  POST   → create a new order
+ *  POST   → create a new order + push notification
  *  PUT    → update order status
  *  DELETE → delete an order
  * ─────────────────────────────────────────────
  */
 
 import mongoose from 'mongoose';
+import webpush from 'web-push';
+
+/* ─── VAPID Configuration for Push Notifications ─── */
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BKdOg_84LUt592Fxx3ApvjQab8m6LbfI02WdPWkyujIedjOsRd16MOrFp-Z_adC-ETNIMub1fmaIovrAf47Ffqo';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || '6w7xsIXJ05pHbxe0EcM7cNOv1-y7FfIOtSVZjlzjlSU';
+const VAPID_EMAIL = process.env.VAPID_EMAIL || 'mailto:admin@vipbrand.com';
+
+webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
 
 /* ─── Cached Connection (Serverless-Safe) ─── */
 let cached = global._mongooseStoreOrderCache;
@@ -42,6 +50,50 @@ const storeOrderSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 const StoreOrder = mongoose.models.StoreOrder || mongoose.model('StoreOrder', storeOrderSchema);
+
+/* ─── Push Subscription Schema ─── */
+const pushSubSchema = new mongoose.Schema({
+  endpoint: { type: String, required: true, unique: true },
+  keys: {
+    p256dh: { type: String, required: true },
+    auth: { type: String, required: true },
+  },
+  userAgent: { type: String, default: '' },
+  label: { type: String, default: 'admin' },
+}, { timestamps: true });
+
+const PushSubscription = mongoose.models.PushSubscription || mongoose.model('PushSubscription', pushSubSchema);
+
+/* ─── Send Push to All Admins ─── */
+async function sendPushToAdmins(order) {
+  try {
+    const subscriptions = await PushSubscription.find().lean();
+    if (subscriptions.length === 0) return;
+
+    const payload = JSON.stringify({
+      title: '🛍️ طلب جديد - VIP Brand!',
+      body: `👤 ${order.customerName || 'عميل جديد'}\n👕 ${order.productName} - ${order.size}\n💰 ${order.price} ج.م`,
+      icon: '/favicon.svg',
+      badge: '/favicon.svg',
+      tag: 'vip-order-' + order._id,
+      url: '/admin',
+    });
+
+    await Promise.allSettled(
+      subscriptions.map(async (sub) => {
+        try {
+          await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload);
+        } catch (error) {
+          if (error.statusCode === 410 || error.statusCode === 404) {
+            await PushSubscription.findOneAndDelete({ endpoint: sub.endpoint });
+          }
+        }
+      })
+    );
+  } catch (e) {
+    console.warn('[Push] Failed to send push notifications:', e.message);
+  }
+}
 
 /* ─── CORS Headers ─── */
 function setCors(res) {
@@ -79,7 +131,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true, data: mapped });
     }
 
-    /* ── POST: Create a new order ── */
+    /* ── POST: Create a new order + push notification ── */
     if (req.method === 'POST') {
       const { productName, productImg, governorate, size, price, customerName, address, phone } = req.body;
       if (!productName || !governorate || !size || !price || !address || !phone) {
@@ -89,6 +141,10 @@ export default async function handler(req, res) {
         productName, productImg, governorate, size, price, customerName: customerName || '', address, phone,
         status: 'pending',
       });
+
+      // 🔔 Send push notification to all admins (non-blocking)
+      sendPushToAdmins(order).catch(() => {});
+
       return res.status(201).json({
         success: true,
         data: {

@@ -1,0 +1,4 @@
+#Tue Apr 28 03:47:16 GMT+02:00 2026
+base.0=C\:\\Users\\DELL\\Desktop\\salah\\twa-build\\app\\build\\intermediates\\dex\\release\\minifyReleaseWithR8\\classes.dex
+renamed.0=classes.dex
+path.0=classes.dex

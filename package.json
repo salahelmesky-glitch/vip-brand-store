@@ -13,6 +13,11 @@
     "start": "concurrently -n SERVER,SITE -c blue,green \"npm run server\" \"npm run dev\""
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@react-three/drei": "^10.7.7",
     "@react-three/fiber": "^9.6.0",
     "@tailwindcss/vite": "^4.2.2",
@@ -27,7 +32,8 @@
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.14.0",
     "tailwindcss": "^4.2.2",
-    "three": "^0.184.0"
+    "three": "^0.184.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.4",

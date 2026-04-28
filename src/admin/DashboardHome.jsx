@@ -1,7 +1,7 @@
 import { useAdmin } from '../context/AdminContext';
 
 export default function DashboardHome() {
-  const { stats, orders, storeOrders, products } = useAdmin();
+  const { stats, orders, storeOrders, products, pushEnabled, pushLoading, registerAndSubscribePush, installCount } = useAdmin();
 
   const recentStoreOrders = [...(storeOrders || [])].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
   const recentOrders = [...orders].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 5);
@@ -13,6 +13,7 @@ export default function DashboardHome() {
     { label: 'طلبات معلقة', value: (stats.pendingStoreOrders || 0), icon: '⏳', color: '#f59e0b' },
     { label: 'طلبات مكتملة', value: (stats.completedStoreOrders || 0), icon: '✅', color: '#10b981' },
     { label: 'ملغية', value: stats.cancelledOrders, icon: '❌', color: '#ef4444' },
+    { label: 'تثبيتات التطبيق', value: installCount || 0, icon: '📲', color: '#3b82f6' },
   ];
 
   const statusColor = {
@@ -74,7 +75,60 @@ export default function DashboardHome() {
         ))}
       </div>
 
-      {/* Quick Info */}
+      {/* 🔔 Push Notification Status Card */}
+      <div style={{
+        marginBottom: 24, padding: '18px 20px', borderRadius: 16,
+        background: pushEnabled
+          ? 'linear-gradient(145deg, rgba(0,255,102,0.05), rgba(16,185,129,0.03))'
+          : 'linear-gradient(145deg, rgba(245,158,11,0.05), rgba(239,68,68,0.03))',
+        border: `1px solid ${pushEnabled ? 'rgba(0,255,102,0.15)' : 'rgba(245,158,11,0.15)'}`,
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        flexWrap: 'wrap', gap: 12,
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{
+            width: 40, height: 40, borderRadius: 12,
+            background: pushEnabled ? 'rgba(0,255,102,0.1)' : 'rgba(245,158,11,0.1)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 20,
+          }}>
+            {pushEnabled ? '🔔' : '🔕'}
+          </div>
+          <div style={{ direction: 'rtl' }}>
+            <p style={{
+              fontSize: 13, fontWeight: 700,
+              color: pushEnabled ? '#00ff66' : '#f59e0b',
+              margin: '0 0 2px',
+            }}>
+              {pushEnabled ? '✅ إشعارات الموبايل مفعلة' : '⚠️ إشعارات الموبايل غير مفعلة'}
+            </p>
+            <p style={{ fontSize: 10, color: 'rgba(153,153,159,0.5)', margin: 0 }}>
+              {pushEnabled
+                ? 'هتوصلك إشعارات على الموبايل لما حد يطلب'
+                : 'فعّل الإشعارات عشان توصلك على موبايلك'
+              }
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={registerAndSubscribePush}
+          disabled={pushLoading}
+          style={{
+            padding: '10px 20px', borderRadius: 12, border: 'none',
+            background: pushEnabled
+              ? 'rgba(0,255,102,0.1)'
+              : 'linear-gradient(135deg, #00ff66, #25D366)',
+            color: pushEnabled ? '#00ff66' : '#000',
+            fontSize: 12, fontWeight: 700, cursor: 'pointer',
+            fontFamily: "'Noto Sans Arabic', 'Inter', sans-serif",
+            opacity: pushLoading ? 0.6 : 1,
+            transition: 'all 0.2s',
+          }}
+        >
+          {pushLoading ? '⏳ جاري التفعيل...' : pushEnabled ? '🔄 إعادة التفعيل' : '🔔 تفعيل الإشعارات'}
+        </button>
+      </div>
+
       <div style={{
         display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
         gap: 16,
