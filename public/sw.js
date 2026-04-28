@@ -7,7 +7,7 @@
    Only icons and manifest are cached for offline icon display.
    ═══════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'vip-brand-v5';
+const CACHE_NAME = 'vip-brand-v6';
 const STATIC_ASSETS = [
   '/favicon.svg',
   '/manifest.json',
@@ -25,13 +25,21 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-/* ── Activate: Clean ALL old caches immediately ── */
+/* ── Activate: Clean ALL old caches immediately and FORCE RELOAD ── */
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       );
+    }).then(() => {
+      // Force all clients to reload immediately to get the new un-cached JS/HTML
+      return self.clients.matchAll({ type: 'window' }).then(windowClients => {
+        for (let client of windowClients) {
+          // Tell the client to navigate to its current URL (forces a refresh)
+          client.navigate(client.url);
+        }
+      });
     })
   );
   self.clients.claim();
