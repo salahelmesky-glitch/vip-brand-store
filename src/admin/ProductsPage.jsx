@@ -8,6 +8,7 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
@@ -18,18 +19,25 @@ export default function ProductsPage() {
     });
   }, [products, search, filterGender]);
 
-  const handleSave = (product) => {
-    if (editingProduct) {
-      updateProduct(editingProduct.id, product);
-      setEditingProduct(null);
-    } else {
-      addProduct(product);
-      setIsAddingNew(false);
+  const handleSave = async (product) => {
+    setSaving(true);
+    try {
+      if (editingProduct) {
+        await updateProduct(editingProduct.id, product);
+        setEditingProduct(null);
+      } else {
+        await addProduct(product);
+        setIsAddingNew(false);
+      }
+    } catch (err) {
+      console.error('[VIP] Save failed:', err);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const handleDelete = (id) => {
-    deleteProduct(id);
+  const handleDelete = async (id) => {
+    await deleteProduct(id);
     setConfirmDelete(null);
   };
 

@@ -102,7 +102,7 @@ export const AdminProvider = ({ children }) => {
   const pollGuardUntilRef = useRef(0); // timestamp until which polling is paused
 
   const startPollGuard = useCallback(() => {
-    pollGuardUntilRef.current = Date.now() + 5000; // pause polling 5 seconds
+    pollGuardUntilRef.current = Date.now() + 10000; // pause polling 10 seconds
   }, []);
 
   const isPollGuarded = useCallback(() => {
@@ -615,8 +615,9 @@ export const AdminProvider = ({ children }) => {
       if (res.ok) {
         const json = await res.json();
         if (json.success && json.data) {
-          // Re-fetch products after save to get correct data
-          setTimeout(() => fetchProducts(false, true), 300);
+          // Wait a moment for DB consistency, then force re-fetch
+          await new Promise(r => setTimeout(r, 500));
+          await fetchProducts(false, true);
           return json.data;
         }
       }
@@ -641,8 +642,9 @@ export const AdminProvider = ({ children }) => {
       });
 
       if (res.ok) {
-        // Re-fetch after save
-        setTimeout(() => fetchProducts(false, true), 300);
+        // Wait a moment for DB consistency, then force re-fetch
+        await new Promise(r => setTimeout(r, 500));
+        await fetchProducts(false, true);
       } else {
         console.error('[VIP] Failed to update product in API');
       }
@@ -663,8 +665,9 @@ export const AdminProvider = ({ children }) => {
       });
 
       if (res.ok) {
-        // Re-fetch after delete
-        setTimeout(() => fetchProducts(false, true), 300);
+        // Wait a moment for DB consistency, then force re-fetch
+        await new Promise(r => setTimeout(r, 500));
+        await fetchProducts(false, true);
       } else {
         console.error('[VIP] Failed to delete product from API');
       }
