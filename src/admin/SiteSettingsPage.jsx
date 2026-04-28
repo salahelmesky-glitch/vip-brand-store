@@ -22,14 +22,12 @@ export default function SiteSettingsPage() {
 
   const showSaved = (msg) => { setSaved(msg); setTimeout(() => setSaved(''), 2000); };
 
-  /* ══ CRITICAL: Sync local state when context updates from API ══ 
-     Without this, the local form values would revert to old values
-     after polling fetches new data from MongoDB */
-  useEffect(() => { setLocalPricing(storePricing || {}); }, [storePricing]);
-  useEffect(() => { setLocalTexts(siteTexts || {}); }, [siteTexts]);
-  useEffect(() => { setLocalCosts(rewardCosts || {}); }, [rewardCosts]);
-  useEffect(() => { setLocalPrizes(prizes || []); }, [prizes]);
-  useEffect(() => { setLocalMysteryText(mysteryText || ''); }, [mysteryText]);
+  /* ══ CRITICAL: Only initialize local state once to prevent polling from overwriting user typing ══ */
+  useEffect(() => { if (Object.keys(localPricing).length === 0 && storePricing) setLocalPricing(storePricing); }, [storePricing]);
+  useEffect(() => { if (Object.keys(localTexts).length === 0 && siteTexts) setLocalTexts(siteTexts); }, [siteTexts]);
+  useEffect(() => { if (Object.keys(localCosts).length === 0 && rewardCosts) setLocalCosts(rewardCosts); }, [rewardCosts]);
+  useEffect(() => { if (localPrizes.length === 0 && prizes && prizes.length > 0) setLocalPrizes(prizes); }, [prizes]);
+  useEffect(() => { if (!localMysteryText && mysteryText) setLocalMysteryText(mysteryText); }, [mysteryText]);
 
   const updatePrize = (idx, field, value) => {
     const copy = [...localPrizes];
