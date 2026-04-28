@@ -1,30 +1,31 @@
 /* ═══════════════════════════════════════════════════
    VIP Brand — Service Worker
-   Push Notifications + App Caching for PWA
+   Push Notifications + Minimal Caching for PWA
+   
+   ⚠️ IMPORTANT: This SW does NOT cache HTML, JS, or CSS
+   to ensure customers always see the latest admin changes.
+   Only icons and manifest are cached for offline icon display.
    ═══════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'vip-brand-v3';
+const CACHE_NAME = 'vip-brand-v5';
 const STATIC_ASSETS = [
-  '/',
   '/favicon.svg',
   '/manifest.json',
   '/icons/icon-192.svg',
   '/icons/icon-512.svg',
 ];
 
-/* ── Install: Cache critical assets ── */
+/* ── Install: Cache only icons/manifest ── */
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {
-        // Don't fail install if some assets aren't available yet
-      });
+      return cache.addAll(STATIC_ASSETS).catch(() => {});
     })
   );
   self.skipWaiting();
 });
 
-/* ── Activate: Clean old caches ── */
+/* ── Activate: Clean ALL old caches immediately ── */
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -36,36 +37,49 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-/* ── Fetch: Network-first with cache fallback ── */
+/* ── Fetch: ALWAYS go to network for HTML/JS/CSS/API ── */
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   
-  // Skip non-GET and API requests
+  // Only handle GET requests
   if (request.method !== 'GET') return;
+  
+  // NEVER cache or intercept API calls
   if (request.url.includes('/api/')) return;
   
+  // NEVER cache HTML pages, JS bundles, or CSS — always go to network
+  // This ensures customers ALWAYS see the latest admin changes
+  const url = new URL(request.url);
+  const isHTML = request.mode === 'navigate' || request.destination === 'document';
+  const isJS = url.pathname.endsWith('.js') || request.destination === 'script';
+  const isCSS = url.pathname.endsWith('.css') || request.destination === 'style';
+  const isAssetBundle = url.pathname.includes('/assets/');
+  
+  if (isHTML || isJS || isCSS || isAssetBundle) {
+    // Network only — no caching, no fallback for dynamic content
+    event.respondWith(
+      fetch(request).catch(() => {
+        // Only fallback to cache for navigation (offline support)
+        if (isHTML) {
+          return caches.match('/') || new Response('Offline', { status: 503 });
+        }
+        return new Response('', { status: 503 });
+      })
+    );
+    return;
+  }
+  
+  // For static assets (icons, images) — network first, cache fallback
   event.respondWith(
     fetch(request)
       .then((response) => {
-        // Cache successful responses
         if (response.ok) {
           const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, clone);
-          });
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
         }
         return response;
       })
-      .catch(() => {
-        // Fallback to cache
-        return caches.match(request).then((cached) => {
-          if (cached) return cached;
-          // For navigation requests, serve the cached index
-          if (request.mode === 'navigate') {
-            return caches.match('/');
-          }
-        });
-      })
+      .catch(() => caches.match(request))
   );
 });
 
