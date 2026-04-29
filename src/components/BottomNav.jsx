@@ -35,20 +35,29 @@ export default function BottomNav() {
         const el = document.getElementById('store');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
       } else {
-        // Navigate to home first, scroll to top, then scroll to store
+        // Navigate to home first, then scroll to store
         navigate('/');
-        window.scrollTo(0, 0);
         setTimeout(() => {
           const el = document.getElementById('store');
           if (el) el.scrollIntoView({ behavior: 'smooth' });
-        }, 150);
+        }, 200);
       }
       setActiveKey('/store');
       return;
     }
-    // For home and other links — always scroll to top when navigating
-    if (key === '/' && location.pathname !== '/') {
-      window.scrollTo(0, 0);
+
+    if (key === '/') {
+      e.preventDefault();
+      setActiveKey('/');
+      if (location.pathname === '/') {
+        // Already on home — scroll to top
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        // Navigate to home
+        navigate('/');
+        window.scrollTo(0, 0);
+      }
+      return;
     }
   };
 
@@ -75,6 +84,7 @@ export default function BottomNav() {
         const isActive = activeKey === item.key ||
           (item.key === '/' && activeKey !== '/ai' && activeKey !== '/page2' && activeKey !== '/settings' && activeKey !== '/store' && location.pathname === '/');
         const isStore = item.key === '/store';
+        const isHome = item.key === '/';
 
         const content = (
           <div
@@ -124,11 +134,12 @@ export default function BottomNav() {
           </div>
         );
 
-        if (isStore) {
+        // Store and Home use custom click handlers
+        if (isStore || isHome) {
           return (
             <a
               key={item.key}
-              href="/#store"
+              href={isStore ? '/#store' : '/'}
               onClick={(e) => handleClick(item.key, e)}
               style={{ textDecoration: 'none', WebkitTapHighlightColor: 'transparent' }}
             >

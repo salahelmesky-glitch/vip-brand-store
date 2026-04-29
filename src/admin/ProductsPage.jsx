@@ -19,14 +19,24 @@ export default function ProductsPage() {
     });
   }, [products, search, filterGender]);
 
-  const handleSave = async (product) => {
+  const handleSave = async (formData) => {
     setSaving(true);
     try {
       if (editingProduct) {
-        await updateProduct(editingProduct.id, product);
+        // ⚡ Only send fields that ACTUALLY changed — avoids sending huge base64 images
+        const changes = {};
+        Object.keys(formData).forEach(key => {
+          if (JSON.stringify(formData[key]) !== JSON.stringify(editingProduct[key])) {
+            changes[key] = formData[key];
+          }
+        });
+        
+        if (Object.keys(changes).length > 0) {
+          await updateProduct(editingProduct.id, changes);
+        }
         setEditingProduct(null);
       } else {
-        await addProduct(product);
+        await addProduct(formData);
         setIsAddingNew(false);
       }
     } catch (err) {
