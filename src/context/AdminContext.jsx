@@ -450,6 +450,7 @@ export const AdminProvider = ({ children }) => {
      ───────────────────────────────────────── */
   // Image cache — persists across re-renders
   const imgCacheRef = useRef({});
+  const allProductsLoadedRef = useRef(false);
 
   const fetchProducts = useCallback(async (showLoading = false, force = false) => {
     // Skip if poll guard is active — unless forced
@@ -457,54 +458,65 @@ export const AdminProvider = ({ children }) => {
     try {
       if (showLoading) setIsLoading(true);
       const ts = Date.now();
-      const res = await fetch(`${API_BASE}/products?_t=${ts}`, {
+
+      // If we already loaded all products, just poll metadata (no images — fast)
+      if (allProductsLoadedRef.current && !force) {
+        const res = await fetch(`${API_BASE}/products?noImg=1&_t=${ts}`, {
+          cache: 'no-store',
+          headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
+        });
+        if (!res.ok) throw new Error(`API error: ${res.status}`);
+        const json = await res.json();
+        if (json.success && json.data && json.data.length > 0) {
+          // Merge with cached images
+          const merged = json.data.map(p => ({
+            ...p,
+            img: imgCacheRef.current[p.id] || p.img || '',
+          }));
+          setProducts(merged);
+        }
+        setApiError(null);
+        return;
+      }
+
+      // First load: paginated with images
+      const res = await fetch(`${API_BASE}/products?page=1&_t=${ts}`, {
         cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          'Pragma': 'no-cache',
-        },
+        headers: { 'Cache-Control': 'no-cache', 'Pragma': 'no-cache' },
       });
 
       if (!res.ok) throw new Error(`API error: ${res.status}`);
-
       const json = await res.json();
-      if (json.success && json.data && json.data.length > 0) {
-        // Merge with cached images
-        const merged = json.data.map(p => ({
-          ...p,
-          img: imgCacheRef.current[p.id] || p.img || '',
-        }));
-        setProducts(merged);
+      if (json.success && json.data) {
+        // Cache images
+        json.data.forEach(p => {
+          if (p.img) imgCacheRef.current[p.id] = p.img;
+        });
+        setProducts(json.data);
 
-        // Load images in background for products that don't have them cached
-        const needImages = merged.filter(p => !p.img && !imgCacheRef.current[p.id]);
-        if (needImages.length > 0) {
-          // Load in batches of 5
-          for (let i = 0; i < needImages.length; i += 5) {
-            const batch = needImages.slice(i, i + 5);
-            const promises = batch.map(async (p) => {
-              try {
-                const imgRes = await fetch(`${API_BASE}/products?imgFor=${p.id}&_t=${ts}`);
-                if (imgRes.ok) {
-                  const imgJson = await imgRes.json();
-                  if (imgJson.success && imgJson.data?.img) {
-                    imgCacheRef.current[p.id] = imgJson.data.img;
-                    return { id: p.id, img: imgJson.data.img };
-                  }
+        // Load remaining pages in background
+        const totalPages = json.pages || 1;
+        if (totalPages > 1) {
+          const allProducts = [...json.data];
+          for (let pg = 2; pg <= totalPages; pg++) {
+            try {
+              const pgRes = await fetch(`${API_BASE}/products?page=${pg}&_t=${ts}`, {
+                cache: 'no-store',
+              });
+              if (pgRes.ok) {
+                const pgJson = await pgRes.json();
+                if (pgJson.success && pgJson.data) {
+                  pgJson.data.forEach(p => {
+                    if (p.img) imgCacheRef.current[p.id] = p.img;
+                  });
+                  allProducts.push(...pgJson.data);
+                  setProducts([...allProducts]);
                 }
-              } catch {}
-              return null;
-            });
-            const results = await Promise.all(promises);
-            const updates = results.filter(Boolean);
-            if (updates.length > 0) {
-              setProducts(prev => prev.map(p => {
-                const found = updates.find(u => u.id === p.id);
-                return found ? { ...p, img: found.img } : p;
-              }));
-            }
+              }
+            } catch {}
           }
         }
+        allProductsLoadedRef.current = true;
       }
       setApiError(null);
     } catch (err) {

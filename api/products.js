@@ -75,7 +75,8 @@ export default async function handler(req, res) {
     /* ── GET: Fetch all products ── */
     if (req.method === 'GET') {
       // Check if requesting a single product image
-      const { imgFor } = req.query;
+      // Single product image
+      const { imgFor, imgBatch, page, noImg } = req.query;
       if (imgFor) {
         const product = await Product.findOne({ pid: Number(imgFor) }).select('pid img').lean();
         if (product) {
@@ -84,22 +85,43 @@ export default async function handler(req, res) {
         return res.status(404).json({ success: false, error: 'Product not found' });
       }
 
-      // Fetch products WITHOUT img field (much faster — avoids 50MB+ response)
-      const products = await Product.find().sort({ pid: 1 }).select('-img').lean();
+      // Batch image load: ?imgBatch=1,2,3,4,5
+      if (imgBatch) {
+        const pids = imgBatch.split(',').map(Number).filter(n => !isNaN(n)).slice(0, 10);
+        const products = await Product.find({ pid: { $in: pids } }).select('pid img').lean();
+        const mapped = products.map(p => ({ id: p.pid, img: p.img }));
+        return res.status(200).json({ success: true, data: mapped });
+      }
 
-      // Map to frontend format
+      // List without images (fast for polling): ?noImg=1
+      if (noImg === '1') {
+        const products = await Product.find().sort({ pid: 1 }).select('-img').lean();
+        const mapped = products.map((p) => ({
+          id: p.pid, name: p.name, nameAr: p.nameAr, img: '',
+          price: p.price, gender: p.gender, inStock: p.inStock, sizes: p.sizes,
+        }));
+        return res.status(200).json({ success: true, data: mapped });
+      }
+
+      // Default: paginated with images (20 per page)
+      const pageNum = Math.max(1, parseInt(page) || 1);
+      const limit = 20;
+      const skip = (pageNum - 1) * limit;
+      const total = await Product.countDocuments();
+      const products = await Product.find().sort({ pid: 1 }).skip(skip).limit(limit).lean();
+
       const mapped = products.map((p) => ({
         id: p.pid,
         name: p.name,
         nameAr: p.nameAr,
-        img: '', // Images loaded separately
+        img: p.img,
         price: p.price,
         gender: p.gender,
         inStock: p.inStock,
         sizes: p.sizes,
       }));
 
-      return res.status(200).json({ success: true, data: mapped });
+      return res.status(200).json({ success: true, data: mapped, total, page: pageNum, pages: Math.ceil(total / limit) });
     }
 
     /* ── PUT: Update a product ── */
