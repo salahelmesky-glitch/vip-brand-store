@@ -1,31 +1,29 @@
 /* ═══════════════════════════════════════════════════
-   VIP Brand — Service Worker
-   Push Notifications + Minimal Caching for PWA
+   VIP Brand — Service Worker v7
+   Push Notifications + Auto-Update for ALL users
    
-   ⚠️ IMPORTANT: This SW does NOT cache HTML, JS, or CSS
+   ⚠️ This SW does NOT cache HTML, JS, or CSS
    to ensure customers always see the latest admin changes.
    Only icons and manifest are cached for offline icon display.
    ═══════════════════════════════════════════════════ */
 
-const CACHE_NAME = 'vip-brand-v6';
+const CACHE_NAME = 'vip-brand-v7';
 const STATIC_ASSETS = [
   '/favicon.svg',
   '/manifest.json',
-  '/icons/icon-192.svg',
-  '/icons/icon-512.svg',
 ];
 
-/* ── Install: Cache only icons/manifest ── */
+/* ── Install: Skip waiting immediately to activate ASAP ── */
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS).catch(() => {});
     })
   );
-  self.skipWaiting();
+  self.skipWaiting(); // Activate immediately — don't wait for old SW
 });
 
-/* ── Activate: Clean ALL old caches immediately and FORCE RELOAD ── */
+/* ── Activate: Clean old caches + Force ALL clients to reload ── */
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -33,19 +31,18 @@ self.addEventListener('activate', (event) => {
         keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
       );
     }).then(() => {
-      // Force all clients to reload immediately to get the new un-cached JS/HTML
+      // Force all open pages to reload with the new code
       return self.clients.matchAll({ type: 'window' }).then(windowClients => {
         for (let client of windowClients) {
-          // Tell the client to navigate to its current URL (forces a refresh)
           client.navigate(client.url);
         }
       });
     })
   );
-  self.clients.claim();
+  self.clients.claim(); // Take control of ALL open pages immediately
 });
 
-/* ── Fetch: ALWAYS go to network for HTML/JS/CSS/API ── */
+/* ── Fetch: ALWAYS network for HTML/JS/CSS/API ── */
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   
@@ -55,19 +52,16 @@ self.addEventListener('fetch', (event) => {
   // NEVER cache or intercept API calls
   if (request.url.includes('/api/')) return;
   
-  // NEVER cache HTML pages, JS bundles, or CSS — always go to network
-  // This ensures customers ALWAYS see the latest admin changes
   const url = new URL(request.url);
   const isHTML = request.mode === 'navigate' || request.destination === 'document';
   const isJS = url.pathname.endsWith('.js') || request.destination === 'script';
   const isCSS = url.pathname.endsWith('.css') || request.destination === 'style';
   const isAssetBundle = url.pathname.includes('/assets/');
   
+  // HTML/JS/CSS: ALWAYS from network — ensures admin changes reach ALL users
   if (isHTML || isJS || isCSS || isAssetBundle) {
-    // Network only — no caching, no fallback for dynamic content
     event.respondWith(
       fetch(request).catch(() => {
-        // Only fallback to cache for navigation (offline support)
         if (isHTML) {
           return caches.match('/') || new Response('Offline', { status: 503 });
         }
@@ -77,7 +71,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
   
-  // For static assets (icons, images) — network first, cache fallback
+  // Images and static: network first, cache fallback
   event.respondWith(
     fetch(request)
       .then((response) => {
@@ -91,12 +85,12 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-/* ── Handle Push Events (works even when phone is locked/closed) ── */
+/* ── Handle Push Events (works even when phone is locked) ── */
 self.addEventListener('push', (event) => {
   let data = {
     title: '🛍️ طلب جديد - VIP Brand!',
     body: 'في طلب جديد على المتجر!',
-    icon: '/icons/icon-192.svg',
+    icon: '/icons/icon-192.png',
     badge: '/favicon.svg',
     tag: 'vip-new-order',
     url: '/admin',
@@ -113,13 +107,13 @@ self.addEventListener('push', (event) => {
 
   const options = {
     body: data.body,
-    icon: data.icon || '/icons/icon-192.svg',
+    icon: data.icon || '/icons/icon-192.png',
     badge: data.badge || '/favicon.svg',
-    tag: data.tag || 'vip-order-' + Date.now(), // unique tag so each order shows
-    vibrate: [300, 100, 300, 100, 300, 100, 300], // stronger vibration pattern
-    requireInteraction: true, // stays on screen until dismissed
-    renotify: true, // always notify even if same tag
-    silent: false, // make sure sound plays
+    tag: data.tag || 'vip-order-' + Date.now(),
+    vibrate: [300, 100, 300, 100, 300, 100, 300],
+    requireInteraction: true,
+    renotify: true,
+    silent: false,
     data: { url: data.url || '/admin' },
     actions: [
       { action: 'open', title: '📋 فتح الطلبات' },
@@ -142,13 +136,11 @@ self.addEventListener('notificationclick', (event) => {
 
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
-      // Try to focus existing admin window
       for (const client of clients) {
         if (client.url.includes('/admin') && 'focus' in client) {
           return client.focus();
         }
       }
-      // Otherwise open a new window
       if (self.clients.openWindow) {
         return self.clients.openWindow(targetUrl);
       }
@@ -156,9 +148,8 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-/* ── Keep Service Worker alive for push ── */
+/* ── Auto re-subscribe push if subscription expires ── */
 self.addEventListener('pushsubscriptionchange', (event) => {
-  // Re-subscribe automatically if subscription expires
   event.waitUntil(
     self.registration.pushManager.subscribe({
       userVisibleOnly: true,
@@ -173,8 +164,13 @@ self.addEventListener('pushsubscriptionchange', (event) => {
           label: 'admin',
         }),
       });
-    }).catch(() => {
-      // Silently fail - will be re-subscribed on next admin visit
-    })
+    }).catch(() => {})
   );
+});
+
+/* ── Periodic check for updates (every page load) ── */
+self.addEventListener('message', (event) => {
+  if (event.data === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });

@@ -9,9 +9,7 @@ function WelcomeOverlay({ onClose }) {
   const [phase, setPhase] = useState(0); // 0=enter, 1=visible, 2=exit
 
   useEffect(() => {
-    // Phase 0 → 1 (show content)
     const t1 = setTimeout(() => setPhase(1), 100);
-    // Auto-close after 6 seconds
     const t2 = setTimeout(() => {
       setPhase(2);
       setTimeout(onClose, 600);
@@ -53,7 +51,6 @@ function WelcomeOverlay({ onClose }) {
           <img src={logo} alt="VIP" style={{
             width: '100%', height: '100%', objectFit: 'cover',
           }} />
-          {/* Shimmer effect */}
           <div style={{
             position: 'absolute', inset: 0,
             background: 'linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.15) 50%, transparent 60%)',
@@ -76,27 +73,27 @@ function WelcomeOverlay({ onClose }) {
           fontFamily: "'Noto Sans Arabic', 'Inter', sans-serif",
           animation: 'welcomeFadeUp 0.5s ease-out 0.4s both',
         }}>
-          🎉 أهلاً بيك في عيلة VIP!
+          🎉 مرحباً بك في عالم VIP!
         </h2>
 
         <p style={{
-          fontSize: 14, color: '#d4d4d8', margin: '0 0 6px',
+          fontSize: 15, color: '#d4d4d8', margin: '0 0 6px',
           fontFamily: "'Noto Sans Arabic', sans-serif",
-          fontWeight: 600, lineHeight: 1.8,
+          fontWeight: 700, lineHeight: 1.8,
           animation: 'welcomeFadeUp 0.5s ease-out 0.5s both',
         }}>
-          لقد انضممت إلى براند VIP 👑
+          تم تثبيت التطبيق بنجاح! 👑
         </p>
 
         <p style={{
-          fontSize: 12, color: '#888', margin: '0 0 24px',
+          fontSize: 13, color: '#888', margin: '0 0 24px',
           fontFamily: "'Noto Sans Arabic', sans-serif",
           lineHeight: 1.7,
           animation: 'welcomeFadeUp 0.5s ease-out 0.6s both',
         }}>
-          دلوقتي هتوصلك كل العروض الحصرية والمنتجات الجديدة
+          دلوقتي أنت جزء من عيلة VIP!
           <br />
-          أول واحد قبل أي حد! 🔥
+          هتوصلك كل العروض الحصرية أول واحد 🔥
         </p>
 
         {/* Decorative line */}
@@ -184,6 +181,38 @@ export default function InstallPrompt() {
     catch { return false; }
   });
 
+  /* ── Generate or retrieve a unique device ID ── */
+  const getDeviceId = useCallback(() => {
+    try {
+      let id = localStorage.getItem('vip_device_id');
+      if (!id) {
+        id = 'dev_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+        localStorage.setItem('vip_device_id', id);
+      }
+      return id;
+    } catch {
+      return 'unknown_' + Date.now();
+    }
+  }, []);
+
+  /* ── Track install ONLY ONCE per device ── */
+  const trackInstallOnce = useCallback(() => {
+    try {
+      // If this device already tracked, do NOT count again
+      if (localStorage.getItem('vip_install_tracked') === 'true') {
+        console.log('[VIP] Install already tracked for this device, skipping');
+        return;
+      }
+      // Mark as tracked FIRST to prevent double-counting
+      localStorage.setItem('vip_install_tracked', 'true');
+      // Send to server
+      incrementInstallCount();
+      console.log('[VIP] ✅ Install tracked for device:', getDeviceId());
+    } catch (e) {
+      console.warn('[VIP] Install tracking error:', e);
+    }
+  }, [incrementInstallCount, getDeviceId]);
+
   useEffect(() => {
     const handler = (e) => {
       e.preventDefault();
@@ -194,12 +223,10 @@ export default function InstallPrompt() {
 
     // Listen for successful app install event
     const onInstalled = () => {
-      incrementInstallCount();
+      trackInstallOnce(); // Count install — ONCE per device
       setShowPrompt(false);
       setInstalling(false);
-      // Show welcome message!
-      setShowWelcome(true);
-      try { localStorage.setItem('vip_just_installed', 'true'); } catch {}
+      setShowWelcome(true); // Show welcome overlay!
     };
     window.addEventListener('appinstalled', onInstalled);
 
@@ -207,7 +234,7 @@ export default function InstallPrompt() {
       window.removeEventListener('beforeinstallprompt', handler);
       window.removeEventListener('appinstalled', onInstalled);
     };
-  }, [dismissed, incrementInstallCount]);
+  }, [dismissed, trackInstallOnce]);
 
   useEffect(() => {
     // If already in standalone mode (installed PWA)
@@ -219,13 +246,11 @@ export default function InstallPrompt() {
           localStorage.removeItem('vip_just_installed');
           setShowWelcome(true);
         }
-        if (!localStorage.getItem('vip_install_tracked')) {
-          localStorage.setItem('vip_install_tracked', 'true');
-          incrementInstallCount();
-        }
+        // Track install ONCE per device
+        trackInstallOnce();
       } catch {}
     }
-  }, [incrementInstallCount]);
+  }, [trackInstallOnce]);
 
   const handleInstall = useCallback(async () => {
     if (!deferredPrompt) return;
@@ -249,6 +274,7 @@ export default function InstallPrompt() {
     if (outcome === 'accepted') {
       clearInterval(progressInterval);
       setProgress(100);
+      try { localStorage.setItem('vip_just_installed', 'true'); } catch {}
       // Welcome message will show via appinstalled event
       setTimeout(() => {
         setShowPrompt(false);
