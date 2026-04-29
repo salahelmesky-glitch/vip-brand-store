@@ -448,6 +448,9 @@ export const AdminProvider = ({ children }) => {
   /* ─────────────────────────────────────────
      Fetch Products from API
      ───────────────────────────────────────── */
+  // Image cache — persists across re-renders
+  const imgCacheRef = useRef({});
+
   const fetchProducts = useCallback(async (showLoading = false, force = false) => {
     // Skip if poll guard is active — unless forced
     if (!force && isPollGuarded()) return;
@@ -466,7 +469,42 @@ export const AdminProvider = ({ children }) => {
 
       const json = await res.json();
       if (json.success && json.data && json.data.length > 0) {
-        setProducts(json.data);
+        // Merge with cached images
+        const merged = json.data.map(p => ({
+          ...p,
+          img: imgCacheRef.current[p.id] || p.img || '',
+        }));
+        setProducts(merged);
+
+        // Load images in background for products that don't have them cached
+        const needImages = merged.filter(p => !p.img && !imgCacheRef.current[p.id]);
+        if (needImages.length > 0) {
+          // Load in batches of 5
+          for (let i = 0; i < needImages.length; i += 5) {
+            const batch = needImages.slice(i, i + 5);
+            const promises = batch.map(async (p) => {
+              try {
+                const imgRes = await fetch(`${API_BASE}/products?imgFor=${p.id}&_t=${ts}`);
+                if (imgRes.ok) {
+                  const imgJson = await imgRes.json();
+                  if (imgJson.success && imgJson.data?.img) {
+                    imgCacheRef.current[p.id] = imgJson.data.img;
+                    return { id: p.id, img: imgJson.data.img };
+                  }
+                }
+              } catch {}
+              return null;
+            });
+            const results = await Promise.all(promises);
+            const updates = results.filter(Boolean);
+            if (updates.length > 0) {
+              setProducts(prev => prev.map(p => {
+                const found = updates.find(u => u.id === p.id);
+                return found ? { ...p, img: found.img } : p;
+              }));
+            }
+          }
+        }
       }
       setApiError(null);
     } catch (err) {

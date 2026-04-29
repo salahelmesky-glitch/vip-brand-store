@@ -1,7 +1,7 @@
 /**
  * ─────────────────────────────────────────────
  *  Vercel Serverless Function — /api/products
- *  GET    → return all products
+ *  GET    → return all products (with compact images)
  *  PUT    → update a product by pid
  *  POST   → add a new product
  *  DELETE → remove a product by pid
@@ -74,14 +74,25 @@ export default async function handler(req, res) {
 
     /* ── GET: Fetch all products ── */
     if (req.method === 'GET') {
-      const products = await Product.find().sort({ pid: 1 }).lean();
+      // Check if requesting a single product image
+      const { imgFor } = req.query;
+      if (imgFor) {
+        const product = await Product.findOne({ pid: Number(imgFor) }).select('pid img').lean();
+        if (product) {
+          return res.status(200).json({ success: true, data: { id: product.pid, img: product.img } });
+        }
+        return res.status(404).json({ success: false, error: 'Product not found' });
+      }
+
+      // Fetch products WITHOUT img field (much faster — avoids 50MB+ response)
+      const products = await Product.find().sort({ pid: 1 }).select('-img').lean();
 
       // Map to frontend format
       const mapped = products.map((p) => ({
         id: p.pid,
         name: p.name,
         nameAr: p.nameAr,
-        img: p.img,
+        img: '', // Images loaded separately
         price: p.price,
         gender: p.gender,
         inStock: p.inStock,
